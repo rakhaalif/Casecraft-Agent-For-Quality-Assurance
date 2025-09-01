@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual envs
+.env
+.venv
+venv/
+env/
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# OS/Temp
+*.log
+*.tmp
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Data/Exports
+exports/
+IMPORT SQUASH/
+squash_cache/
+*.xls
+*.xlsx
+
+# Backups/Archives
+Backups/
+archived_json_*/
+archive_*/
+
+# Images and large binaries (optional)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.zip
