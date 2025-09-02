@@ -49,3 +49,4 @@
  
  # Cache
  *.cache/
+vendor/
