@@ -602,8 +602,8 @@ class TelegramQABot:
                 return
 
             # Normal text processing (no direct image handling here)
-            # Handle testcases mode
-            if mode == 'testcases':
+            # Enter/handle Collection Mode when in either 'testcases' or 'generate' flows
+            if mode in ('testcases', 'generate'):
                 # Regenerate with same requirements: accept prompt/comment and regenerate
                 if context.user_data.get('regen_mode') == 'same_requirements':
                     try:
@@ -697,22 +697,24 @@ class TelegramQABot:
             image = PILImage.open(bio).convert('RGB')
             caption = (update.message.caption or "").strip()
 
-            # Collection mode: just add to basket
+            # Collection mode: ask for classification before adding
             if context.user_data.get('collect_requirements_mode', False):
-                imgs = context.user_data.get('collected_images', []) or []
-                imgs.append(image)
-                context.user_data['collected_images'] = imgs
-                txts = context.user_data.get('collected_texts', []) or []
-                count_imgs = len(imgs)
-                count_txts = len(txts)
+                # Preserve image (and caption, if any) for post-classification merge
+                context.user_data['pending_raw_image'] = image
+                if caption:
+                    context.user_data['pending_generation_text'] = caption
                 keyboard = [
-                    [InlineKeyboardButton("➕ Add More Text", callback_data=f"collect_more_text_{user_id}"),
-                     InlineKeyboardButton("➕ Add More Image", callback_data=f"collect_add_image_{user_id}")],
-                    [InlineKeyboardButton("✅ Generate Now", callback_data=f"collect_generate_{user_id}"),
-                     InlineKeyboardButton("🗑️ Reset", callback_data=f"collect_reset_{user_id}")]
+                    [
+                        InlineKeyboardButton("📄 Requirements / Dokumen", callback_data=f"classify_image_requirements_{user_id}"),
+                        InlineKeyboardButton("🖥️ UI Design / Mockup", callback_data=f"classify_image_design_{user_id}")
+                    ],
+                    [InlineKeyboardButton("← Back to Collection", callback_data=f"back_to_collection_{user_id}")]
                 ]
                 await update.message.reply_text(
-                    f"🧺 Image saved.\n\n📄 Text: {count_txts}\n🖼️ Images: {count_imgs}",
+                    "Konfirmasi jenis gambar ini:\n\n"
+                    "📄 Requirements / Dokumen → PRD, user story, acceptance criteria\n"
+                    "🖥️ UI Design / Mockup → Screenshot aplikasi, desain Figma, layout UI\n\n"
+                    "Pilih salah satu untuk melanjutkan.",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return
@@ -722,67 +724,64 @@ class TelegramQABot:
             mode = user_session.get('mode', 'general')
             generate_type = user_session.get('generate_type', user_session.get('test_type', 'functional'))
 
-            # If caption present and in generate/testcases mode, do multimodal generation
-            if (mode in ('generate', 'testcases')) and caption and len(caption) >= 10:
-                processing_message = await update.message.reply_text(
-                    """🔄 Multi-Modal Analysis in Progress...
-
-⏳ Step 1: Processing image content...
-⏳ Step 2: Analyzing text requirements...
-⏳ Step 3: Combining both sources...
-⏳ Step 4: Generating comprehensive results...
-
-Please wait..."""
-                )
-                try:
-                    response = await self.generate_multimodal_test_cases(image, caption, generate_type)
-                finally:
-                    try:
-                        await processing_message.delete()
-                    except Exception:
-                        pass
-                await self.send_long_message(update, response)
-                context.user_data['last_generated_test_cases'] = response
-                context.user_data['last_test_type'] = self._deduce_effective_type(generate_type, context.user_data, self.user_sessions.get(user_id, {}))
-                context.user_data['last_sources_text'] = caption
-                context.user_data['last_sources_images'] = [image]
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text="✅ Test Cases Generated from Image + Caption!",
-                    reply_markup=self.get_post_generation_keyboard(user_id)
+            # If caption present and in generate/testcases mode, ASK FOR CLASSIFICATION first
+            if (mode in ('generate', 'testcases')) and caption:
+                # Preserve caption to be merged into collection after classification
+                context.user_data['pending_generation_text'] = caption
+                context.user_data['pending_raw_image'] = image
+                back_label = "← Back to Test Type Menu" if not context.user_data.get('collect_requirements_mode') else f"← Back to Collection"
+                back_cb = "test_type_menu" if not context.user_data.get('collect_requirements_mode') else f"back_to_collection_{user_id}"
+                keyboard = [
+                    [
+                        InlineKeyboardButton("📄 Requirements / Dokumen", callback_data=f"classify_image_requirements_{user_id}"),
+                        InlineKeyboardButton("🖥️ UI Design / Mockup", callback_data=f"classify_image_design_{user_id}")
+                    ],
+                    [InlineKeyboardButton(back_label, callback_data=back_cb)]
+                ]
+                await update.message.reply_text(
+                    "Konfirmasi jenis gambar ini:\n\n"
+                    "📄 Requirements / Dokumen → PRD, user story, acceptance criteria\n"
+                    "🖥️ UI Design / Mockup → Screenshot aplikasi, desain Figma, layout UI\n\n"
+                    "Pilih salah satu untuk melanjutkan.",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return
 
-            # If no caption or in a different mode, guide next steps
+            # If no caption: ask for classification before proceeding
             if mode in ('generate', 'testcases'):
+                context.user_data['pending_raw_image'] = image
+                back_label = "← Back to Test Type Menu" if not context.user_data.get('collect_requirements_mode') else f"← Back to Collection"
+                back_cb = "test_type_menu" if not context.user_data.get('collect_requirements_mode') else f"back_to_collection_{user_id}"
                 keyboard = [
-                    [InlineKeyboardButton("➕ Add more image/text", callback_data=f"collect_start_{user_id}")],
-                    [InlineKeyboardButton("🚀 Generate from Image", callback_data=f"generate_image_only_{user_id}")],
-                    [InlineKeyboardButton("📝 Add Text Content", callback_data=f"wait_for_text_{user_id}")],
-                    [InlineKeyboardButton("← Back to Test Type Menu", callback_data="test_type_menu")]
+                    [
+                        InlineKeyboardButton("📄 Requirements / Dokumen", callback_data=f"classify_image_requirements_{user_id}"),
+                        InlineKeyboardButton("🖥️ UI Design / Mockup", callback_data=f"classify_image_design_{user_id}")
+                    ],
+                    [InlineKeyboardButton(back_label, callback_data=back_cb)]
                 ]
                 await update.message.reply_text(
-                    "📸 Image received for generation!\n\nSelect next action:",
+                    "Konfirmasi jenis gambar ini:\n\n"
+                    "📄 Requirements / Dokumen → PRD, user story, acceptance criteria\n"
+                    "🖥️ UI Design / Mockup → Screenshot aplikasi, desain Figma, layout UI\n\n"
+                    "Pilih salah satu untuk melanjutkan.",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
-                context.user_data['pending_image'] = image
-                context.user_data['pending_image_mode'] = mode
-                context.user_data['pending_image_type'] = user_session.get('test_type', 'functional')
                 return
 
             if mode in ('testcases', 'generate'):
+                # Redundant safety: ensure we always ask classification in these modes
+                context.user_data['pending_raw_image'] = image
                 keyboard = [
-                    [InlineKeyboardButton("➕ Add more image/text", callback_data=f"collect_start_{user_id}")],
-                    [InlineKeyboardButton("🚀 Generate from image only", callback_data=f"generate_image_only_{user_id}")],
-                    [InlineKeyboardButton("← Back to Generate Menu", callback_data="mode_testcases")]
+                    [
+                        InlineKeyboardButton("📄 Requirements / PRD", callback_data=f"classify_image_requirements_{user_id}"),
+                        InlineKeyboardButton("🎨 UI Design", callback_data=f"classify_image_design_{user_id}")
+                    ],
+                    [InlineKeyboardButton("← Back to Test Type Menu", callback_data="test_type_menu")]
                 ]
                 await update.message.reply_text(
-                    "📸 Image received. Choose your next step:",
+                    "📸 Image received. Pilih jenis gambar terlebih dahulu sebelum lanjut:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
-                context.user_data['pending_image'] = image
-                context.user_data['pending_image_mode'] = mode
-                context.user_data['pending_image_type'] = generate_type
                 return
 
             # General mode: analyze and offer generation
@@ -1889,6 +1888,25 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                     chat_id=query.message.chat_id,
                     text="Select next action:",
                     reply_markup=self.get_post_generation_keyboard(user_id)
+                )
+                return
+
+            elif query.data.startswith("back_to_collection_"):
+                # Re-show collection basket status
+                uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else update.effective_user.id
+                imgs = context.user_data.get('collected_images', []) or []
+                txts = context.user_data.get('collected_texts', []) or []
+                context.user_data['collect_requirements_mode'] = True
+                keyboard = [
+                    [InlineKeyboardButton("➕ Add More Text", callback_data=f"collect_more_text_{uid}"),
+                     InlineKeyboardButton("➕ Add Image", callback_data=f"collect_add_image_{uid}")],
+                    [InlineKeyboardButton("✅ Generate Now", callback_data=f"collect_generate_{uid}"),
+                     InlineKeyboardButton("🗑️ Reset", callback_data=f"collect_reset_{uid}")]
+                ]
+                await self.safe_edit_message(
+                    query,
+                    f"🧺 Collection Mode Active\n\n📄 Text: {len(txts)}\n🖼️ Images: {len(imgs)}",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return
 
@@ -3465,62 +3483,6 @@ Kirim requirements untuk visual test generation:"""
         }
         return normalized
 
-    async def fetch_all_squash_test_cases_api(self, page_size: int = 100, type_filter: Optional[str] = None, max_pages: Optional[int] = None, fields: str = 'name,reference,script') -> int:
-        """Fetch & cache all accessible test cases via Squash REST API.
-        Stores results in self.squash_api_testcases (list) and self.squash_api_tc_map (dict by id).
-        Returns number of test cases fetched.
-        """
-        import asyncio
-        self._init_squash_api_session()
-        base = getattr(self, 'squash_api_base_url', None)
-        if not base:
-            logger.warning("Cannot fetch Squash test cases: base URL missing")
-            return 0
-
-        params = {
-            'page': 0,
-            'size': page_size,
-            'fields': fields
-        }
-        if type_filter:
-            params['type'] = type_filter
-
-        all_tcs = []
-        page_count = 0
-        while True:
-            data = await asyncio.to_thread(self._squash_api_get, '/api/rest/latest/test-cases', params)
-            embedded = data.get('_embedded', {})
-            items = embedded.get('test-cases') or embedded.get('testcases') or []
-            for item in items:
-                # If detailed fields (script only) we may need full detail fetch for steps
-                tc_id = item.get('id')
-                try:
-                    detail = await asyncio.to_thread(self._squash_api_get, f"/api/rest/latest/test-cases/{tc_id}")
-                except Exception as detail_err:
-                    logger.debug(f"Detail fetch failed for {tc_id}: {detail_err}; using shallow item")
-                    detail = item
-                normalized = self._normalize_squash_test_case(detail)
-                all_tcs.append(normalized)
-            page_meta = data.get('page', {})
-            total_pages = page_meta.get('totalPages')
-            page_number = page_meta.get('number', params['page'])
-            logger.info(f"Fetched page {page_number+1}/{total_pages or '?'}: {len(items)} test cases")
-            page_count += 1
-            if not items:
-                break
-            if max_pages and page_count >= max_pages:
-                break
-            # Stop if last page
-            if total_pages is not None and page_number >= total_pages - 1:
-                break
-            params['page'] = params['page'] + 1
-
-        # Deduplicate by id (keep latest occurrence)
-        tc_map = {tc['id']: tc for tc in all_tcs if tc.get('id') is not None}
-        self.squash_api_testcases = list(tc_map.values())
-        self.squash_api_tc_map = tc_map
-        logger.info(f"Squash API fetch complete: {len(self.squash_api_testcases)} unique test cases cached")
-        return len(self.squash_api_testcases)
 
     async def handle_sync_squash_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Telegram command handler: /sync_squash → fetch test cases via REST API."""
