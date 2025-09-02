@@ -1,0 +1,512 @@
+=== Visual Knowledge — Squash BDD ===
+
+Context
+- Web product environment using Squash for test case management.
+- Each feature/task has a PRD with Definition of Done and Acceptance Criteria; use this as the primary source when writing test cases.
+- Visual/UI validation references the Figma design (frame/page names, components, tokens).
+- Test case categories:
+  - Functional test cases: logic and interactions (input validation, workflows).
+  - Visual test cases: UI visuals, layout, spacing, alignment, icons, states, and responsiveness.
+- Write test cases clearly and structured so the title alone communicates the validation target to FE and BE.
+
+Authoring rules (Visual)
+- Language: English only.
+- Structure: Gherkin BDD with strict order Feature → Scenario → Given → When → Then (+ And optional).
+- Given/When/Then are mandatory. Do not chain keywords (e.g., avoid "Then When").
+- One primary action per Scenario (one When). Keep Then assertions visual and objective.
+- Cap at 20 scenarios per request.
+- Map assertions to Figma or PRD acceptance criteria where applicable.
+- Prefer precise, observable checks (text equals, visible, position, size, color token, alignment).
+
+
+BDD Step Templates (Visual)
+
+Given (preconditions)
+- the user is authenticated and on the {Page} page
+- the {Modal} modal is open
+- the viewport width is {Width}px and height is {Height}px
+- the application is in {light|dark} theme
+- the network is stable and all assets are loaded
+- the Figma reference is "{File} / {Page} / {Frame}"
+
+When (actions)
+- the user clicks "{Button}"
+- the user opens the {Modal} modal
+- the user hovers over the {Icon|Element}
+- the user resizes the viewport to {Width}x{Height}
+- the user scrolls to the {Section}
+
+Then (visual outcomes)
+- the "{Element}" is visible
+- the text of "{Element}" equals "{Exact text}"
+- the "{Button}" is placed at the {top-right|top-left|...} of the {Container}
+- the {Modal} is centered in the viewport with overlay displayed
+- the "{Field}" shows label "{Label}" and placeholder "{Placeholder}"
+- the "{Field}" shows a required indicator (asterisk) next to the label
+- the {Icon} is visible and matches the design reference
+- color/contrast meets token "{TokenName}" as per design
+- spacing/padding/margin match the spec ±2px
+- hover tooltip text is "{Tooltip}"
+
+And (additional acceptance criteria)
+- no elements overlap or clip
+- alignment follows the grid system
+- responsive rules apply correctly at breakpoints {sm|md|lg|xl}
+- the modal close button "X" is visible and accessible
+- the layout persists when the viewport changes size
+
+
+Reference Visual Test Case Titles
+- 001. Make sure "Add New User" button has the correct title
+- 002. IF Password == empty => Show error "Password can't be empty"
+- 003. Make sure "Add New User" button has a visible "+" icon
+- 004. Make sure "Add New User" button is placed at the top right corner of User Management page
+- 005. Make sure "Add New User" modal has the correct title
+- 006. Make sure modal contains input fields for "Username", "User Email", "Phone Number", "Role", "User Group", "Password", "Confirm Password", and others
+- 007. Make sure modal contains "Cancel" button and "Add User" button at the bottom
+- 008. Make sure modal is centered in viewport when opened
+- 009. Make sure "Username" field has label and placeholder text ("Enter username")
+- 010. Make sure "User Email" field has label and placeholder text (e.g., "Ex: halo@netmonk.id")
+- 011. Make sure both "Username" and "User Email" fields are mandatory (indicated by an asterisk *)
+- 012. Make sure "User Email" field allows valid email input format
+- 013. Make sure "Phone Number" field has label and placeholder text (e.g., "Ex: 081234567890")
+- 014. Make sure "Phone Number" field is mandatory (indicated by an asterisk *)
+- 015. Make sure "Role" dropdown is visible and labeled correctly with placeholder "Select Role"
+- 016. Make sure "Role" dropdown contains selectable options (Superadmin, Admin, User)
+- 017. Make sure "Role" dropdown is mandatory (indicated by an asterisk *)
+- 018. Make sure "User Group" dropdown is visible and labeled correctly with placeholder "Select User Group"
+- 019. Make sure "User Group" dropdown contains selectable options
+- 020. Make sure "User Group" dropdown is mandatory (indicated by an asterisk *)
+- 021. Make sure "Password" field has label and placeholder text ("Enter password")
+- 022. Make sure "Password" field is mandatory (indicated by an asterisk *)
+- 023. Make sure password input shows red icon when password does not meet requirements (e.g., less than 8 chars, missing uppercase, etc.)
+- 024. Make sure password input shows green check when password meets requirements (e.g., min 8 chars, uppercase, lowercase, numbers)
+- 025. Make sure there is a "Show" button next to password field which displays the password when clicked
+- 026. Make sure there is a "Hide" button that hides the password when clicked
+- 027. Make sure "Confirm Password" field has label and placeholder text ("Enter password confirmation")
+- 028. Make sure "Confirm Password" field is mandatory (indicated by an asterisk *)
+- 029. Make sure Change Password modal has title = "Change Password"
+- 030. Make sure Change Password modal has "X" button to close
+- 031. Make sure Change Password modal has text = "Username (User email)"
+- 032. Make sure Change Password modal shows value from "Username (User email)" under the text, e.g., "root (developer@netmonk.id)"
+- 033. Make sure Change Password modal has field with title = "Password" and marked = "Required"
+- 034. Make sure Change Password modal has password field with placeholder = "Enter password" and "closed eyes icon"
+- 035. Make sure password field contains note "Min. 8 Characters" and "Uppercase" and "Lowercase" and "Number" with "grey ellipse" indicators
+- 036. Make sure Change Password modal has field with title "Confirm Password" and "Required" mark
+- 037. Make sure Confirm Password field has placeholder = "Enter password confirmation" and "closed eyes icon"
+- 038. Make sure Change Password modal has "Cancel" button
+- 039. Make sure Change Password modal has "Save Change" button
+- 040. Make sure note in Password field changes to "Green" or "Red" depending on validation
+- 041. Make sure "closed eyes icon" has hover "Show" in Password and Confirm Password fields
+- 042. Make sure Password and Confirm Password values are encrypted by default
+- 043. Make sure Change Password modal shows Red color when showing error message on each field
+
+
+Example Feature and Scenarios (Visual)
+
+Feature: User Management — Add New User Button
+
+Scenario: 001. Button title is correct
+  Given the user is authenticated and on the User Management page
+  When the user views the "Add New User" button
+  Then the text of "Add New User" equals "Add New User"
+  And the button is placed at the top-right of the header container
+
+Scenario: 003. Plus icon is visible next to button title
+  Given the user is authenticated and on the User Management page
+  When the user views the "Add New User" button
+  Then the "+" icon is visible next to the title with correct spacing
+
+Scenario: 008. Modal is centered when opened
+  Given the Add New User modal is open
+  When the user views the modal
+  Then the modal is centered in the viewport with overlay visible
+  And the modal header text equals "Add New User"
+
+Scenario: 011. Required indicators appear for Username and User Email
+  Given the Add New User modal is open
+  When the user views the "Username" and "User Email" fields
+  Then each label shows a required indicator (asterisk) next to the label
+
+
+Prompt Template (for generating visual test cases)
+Use the following format when requesting visual test cases:
+
+Task: Create visual BDD test cases for feature {Feature Name}
+PRD: {Insert PRD contents including Definition of Done and Acceptance Criteria}
+Figma: {Attach/reference the relevant Figma frame(s)}
+Scope: Visual testing — UI elements, layout, spacing, icons, states, responsiveness
+Constraints:
+- English only, Gherkin BDD
+- Given/When/Then mandatory; And optional
+- Max 20 scenarios
+
+Expected Output:
+- Feature title
+- Scenarios with clear titles (e.g., 001. Make sure ...)
+- Each scenario contains: Given, When, Then (+ And as needed)
+
+Notes
+- Keep assertions objective and measurable (text equals, visible, position, size, color token).
+- Align with PRD acceptance criteria and Figma design tokens.
+- Avoid overlapping checks across scenarios; one action per scenario.Visual Testing Knowledge (Project-specific additions)
+
+- Scope: appearance only (layout, spacing, alignment, size, color, typography, icons, images, responsiveness, accessibility).
+- Never assert backend or business logic; convert to visual cues (selected state, indicators, empty-state card).
+- Use concrete, inspectable expectations (exact labels, icon presence, color roles, spacing consistency).
+- Include responsive and accessibility checks where applicable (focus ring, contrast hints, alt text).
+- Example structure hints:
+  001. [Component] - [Visual Quality]
+  Given the UI is visible
+  When the tester reviews [area/state]
+  Then [visual expectation]
+  And [optional extra visual checks]
+
+
+=== Visual Test Case Title Patterns (Given / When / Then aligned) ===
+
+Title style
+- Use: "NNN. Make sure {Element} {visual property}" or "NNN. IF {state} => {visual outcome}".
+- Keep titles short, objective, and specific to an observable visual result.
+- Do not include asterisks; express required/mandatory in steps.
+
+Given templates (visual context)
+- the user is authenticated and on the {Page} page
+- the {Modal} modal is open
+- the viewport width is {Width}px and height is {Height}px
+- the application is in {light|dark} theme
+
+When templates (visual trigger)
+- the user views the {Element}
+- the user hovers over the {Icon|Element}
+- the user resizes the viewport to {Width}x{Height}
+- the user scrolls to the {Section}
+
+Then templates (visual assertions)
+- the "{Element}" is visible
+- the text of "{Element}" equals "{Exact text}"
+- the {Modal} is centered in the viewport with overlay
+- the "{Button}" is placed at the top-right of the {Container}
+- the "{Field}" has label "{Label}" and placeholder "{Placeholder}"
+- spacing/padding/margin match the spec ±2px
+- color token equals "{TokenName}"
+
+Examples
+Title: 001. Make sure "Add New User" button has the correct title
+  Given the user is authenticated and on the User Management page
+  When the user views the "Add New User" button
+  Then the text of "Add New User" equals "Add New User"
+
+Title: 004. Make sure "Add New User" button is placed at the top right corner of User Management page
+  Given the user is authenticated and on the User Management page
+  When the user views the header area
+  Then the "Add New User" button is placed at the top-right of the header container
+
+Title: 008. Make sure modal is centered in viewport when opened
+  Given the Add New User modal is open
+  When the user views the modal
+  Then the modal is centered in the viewport with overlay visible
+
+
+=== Given/When/Then Title Skeletons (Visual — Provided) ===
+
+Test case title: 001. Make sure "Add New User" button has the correct title.
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user views the header area)]
+And [Additional actions or events (e.g., waits for assets to load)]
+Then [Expected visual result (e.g., button text equals "Add New User")]
+
+Test case title: 002. IF Password == empty => Show error "Password can't be empty"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user focuses and blurs the Password field without input)]
+And [Additional actions or events (e.g., attempts to submit)]
+Then [Expected visual result (e.g., inline error text is displayed under Password)]
+
+Test case title: 003. Make sure "Add New User" button has a visible "+" icon 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user views the button)]
+And [Additional actions or events (e.g., checks icon placement)]
+Then [Expected visual result (e.g., plus icon visible next to title)]
+
+Test case title: 004. Make sure "Add New User" button is placed at the top right corner of User Management page 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user views the header area)]
+And [Additional actions or events (e.g., verifies alignment)]
+Then [Expected visual result (e.g., button placed top-right of header container)]
+
+Test case title: 005. Make sure "Add New User" modal has the correct title
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)] 
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., checks header label)]
+Then [Expected visual result (e.g., modal header equals "Add New User")]
+
+Test case title: 006. Make sure modal contains input fields for "Username", "User Email", "Phone Number", "Role", "User Group", "Password", "Confirm Password", and others 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., scans form)]
+Then [Expected visual result (e.g., all required fields are visible)]
+
+Test case title: 007. Make sure modal contains "Cancel" button and "Add User" button at the bottom 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., scrolls to footer if needed)]
+Then [Expected visual result (e.g., Cancel and Add User buttons are visible at footer)]
+
+Test case title: 008. Make sure modal is centered in viewport when opened 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., checks overlay presence)]
+Then [Expected visual result (e.g., modal centered in viewport with overlay)]
+
+Test case title: 009. Make sure "Username" field has label and placeholder text ("Enter username") 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects Username field)]
+Then [Expected visual result (e.g., label present and placeholder equals "Enter username")]
+
+Test case title: 010. Make sure "User Email" field has label and placeholder text (e.g., "Ex: halo@netmonk.id") 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects Email field)]
+Then [Expected visual result (e.g., label present and placeholder follows example)]
+
+Test case title: 011. Make sure both "Username" and "User Email" fields are mandatory (indicated by an asterisk *)
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects labels)]
+Then [Expected visual result (e.g., required indicator asterisk is displayed)]
+
+Test case title: 012. Make sure "User Email" field allows valid email input format 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user types invalid then valid email)]
+And [Additional actions or events (e.g., blurs the field)]
+Then [Expected visual result (e.g., error shown for invalid, no error for valid format)]
+
+Test case title: 013. Make sure "Phone Number" field has label and placeholder text (e.g., "Ex: 081234567890") 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects Phone Number field)]
+Then [Expected visual result (e.g., label present and placeholder equals example)]
+
+Test case title: 014. Make sure "Phone Number" field is mandatory (indicated by an asterisk *) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects label indicator)]
+Then [Expected visual result (e.g., asterisk is displayed next to label)]
+
+Test case title: 015. Make sure "Role" dropdown is visible and labeled correctly with placeholder "Select Role" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., opens dropdown if needed)]
+Then [Expected visual result (e.g., dropdown visible and placeholder equals "Select Role")]
+
+Test case title: 016. Make sure "Role" dropdown contains selectable options (Superadmin, Admin, User) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the dropdown)]
+And [Additional actions or events (e.g., inspects options list)]
+Then [Expected visual result (e.g., options displayed: Superadmin, Admin, User)]
+
+Test case title: 017. Make sure "Role" dropdown is mandatory (indicated by an asterisk *) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects label)]
+Then [Expected visual result (e.g., asterisk is displayed next to Role label)]
+
+Test case title: 018. Make sure "User Group" dropdown is visible and labeled correctly with placeholder "Select User Group" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects dropdown)]
+Then [Expected visual result (e.g., dropdown visible with placeholder "Select User Group")]
+
+Test case title: 019. Make sure "User Group" dropdown contains selectable options 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the dropdown)]
+And [Additional actions or events (e.g., inspects options)]
+Then [Expected visual result (e.g., options list is visible)]
+
+Test case title: 020. Make sure "User Group" dropdown is mandatory (indicated by an asterisk *) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects label)]
+Then [Expected visual result (e.g., asterisk is displayed next to User Group label)]
+
+Test case title: 021. Make sure "Password" field has label and placeholder text ("Enter password")
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects Password field)]
+Then [Expected visual result (e.g., label present and placeholder equals "Enter password")]
+
+Test case title: 022. Make sure "Password" field is mandatory (indicated by an asterisk *) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects label)]
+Then [Expected visual result (e.g., asterisk is displayed next to Password label)]
+
+Test case title: 023. Make sure password input shows red icon when password does not meet requirements (e.g., less than 8 chars, missing uppercase, etc.) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user types a non-compliant password)]
+And [Additional actions or events (e.g., blurs the field)]
+Then [Expected visual result (e.g., red icon and error indicator shown)]
+
+Test case title: 024. Make sure password input shows green check when password meets requirements (e.g., min 8 chars, uppercase, lowercase, numbers) 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user types a compliant password)]
+And [Additional actions or events (e.g., blurs the field)]
+Then [Expected visual result (e.g., green check indicator is shown)]
+
+Test case title: 025. Make sure there is a "Show" button next to password field which displays the password when clicked 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user toggles the eye icon)]
+And [Additional actions or events (e.g., observes field state)]
+Then [Expected visual result (e.g., password text becomes visible)]
+
+Test case title: 026. Make sure there is a "Hide" button that hides the password when clicked 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user toggles the eye icon again)]
+And [Additional actions or events (e.g., observes field state)]
+Then [Expected visual result (e.g., password text becomes masked)]
+
+Test case title: 027. Make sure "Confirm Password" field has label and placeholder text ("Enter password confirmation") 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects Confirm Password field)]
+Then [Expected visual result (e.g., label present and placeholder equals "Enter password confirmation")]
+
+Test case title: 028. Make sure "Confirm Password" field is mandatory (indicated by an asterisk *)
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)] 
+When [User action or event (e.g., user opens the modal)]
+And [Additional actions or events (e.g., inspects label)]
+Then [Expected visual result (e.g., asterisk is displayed next to Confirm Password label)]
+
+Test case title: 029. Make sure Change Password modal has title = "Change Password" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., checks header label)]
+Then [Expected visual result (e.g., header equals "Change Password")]
+
+Test case title: 030. Make sure Change Password modal has "X" button to close 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., inspects top-right corner)]
+Then [Expected visual result (e.g., an "X" close button is visible)]
+
+Test case title: 031. Make sure Change Password modal has text = "Username (User email)" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., checks the info text)]
+Then [Expected visual result (e.g., text "Username (User email)" is displayed)]
+
+Test case title: 032. Make sure Change Password modal shows value from "Username (User email)" under the text, e.g., "root (developer@netmonk.id)" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., checks the value under the text)]
+Then [Expected visual result (e.g., value "root (developer@netmonk.id)" is displayed)]
+
+Test case title: 033. Make sure Change Password modal has field with title = "Password" && marked = "Required" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., inspects the Password label)]
+Then [Expected visual result (e.g., label "Password" with required mark is visible)]
+
+Test case title: 034. Make sure Change Password modal has password field with placeholder = "Enter password" && "closed eyes icon" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., inspects the Password field and icon)]
+Then [Expected visual result (e.g., placeholder equals "Enter password" and closed-eye icon visible)]
+
+Test case title: 035. Make sure password field contains note "Min. 8 Characters" && "Uppercase" && "Lowercase" && "Number" with "grey ellipse" indicators 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user views the Password field notes)]
+And [Additional actions or events (e.g., types various characters)]
+Then [Expected visual result (e.g., grey ellipse indicators reflect compliance)]
+
+Test case title: 036. Make sure Change Password modal has field with title "Confirm Password" && "Required" mark 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., inspects the Confirm Password label)]
+Then [Expected visual result (e.g., label with required mark is visible)]
+
+Test case title: 037. Make sure Confirm Password field has placeholder = "Enter password confirmation" && "closed eyes icon" 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., inspects Confirm Password field and icon)]
+Then [Expected visual result (e.g., placeholder equals "Enter password confirmation" and closed-eye icon visible)]
+
+Test case title: 038. Make sure Change Password modal has "Cancel" button 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., views modal footer)]
+Then [Expected visual result (e.g., Cancel button is visible)]
+
+Test case title: 039. Make sure Change Password modal has "Save Change" button 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user opens the Change Password modal)]
+And [Additional actions or events (e.g., views modal footer)]
+Then [Expected visual result (e.g., Save Change button is visible)]
+
+Test case title: 040. Make sure note in Password field changes to "Green" or "Red" depending on validation 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user types compliant and non-compliant passwords)]
+And [Additional actions or events (e.g., observes note indicators)]
+Then [Expected visual result (e.g., note indicators turn green/red accordingly)]
+
+Test case title: 041. Make sure "closed eyes icon" has hover "Show" in Password && Confirm Password fields 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user hovers the eye icon)]
+And [Additional actions or events (e.g., waits for tooltip)]
+Then [Expected visual result (e.g., tooltip text equals "Show")]
+
+Test case title: 042. Make sure Password and Confirm Password values are encrypted by default 
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user focuses the fields)]
+And [Additional actions or events (e.g., checks field type)]
+Then [Expected visual result (e.g., both fields mask input by default)]
+
+Test case title: 043. Make sure Change Password modal shows Red color when showing error message on each field
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user triggers validation errors)]
+And [Additional actions or events (e.g., inspects error styles)]
+Then [Expected visual result (e.g., error messages use Red color per design token)]

@@ -1,0 +1,288 @@
+Functional Testing Knowledge (Project-specific additions)
+
+- Prioritize business rules, inputs, outputs, and system behaviors.
+- Ensure preconditions are clear (auth state, data setup) and postconditions are verifiable.
+- Cover positive, negative, and edge cases (boundary values, empty states, invalid inputs).
+- Avoid purely visual assertions unless relevant to functional acceptance criteria.
+- Prefer deterministic data and steps; avoid ambiguous terms.
+- Example structure hints:
+  001. [Area] - [Action/Outcome]
+  Given [precondition]
+  When [action performed]
+  Then [observable functional result]
+  And [optional additional acceptance criteria]
+
+
+=== Squash Functional Testing (BDD) — Task, Context, References, Template ===
+
+Task
+- As an SQA (Manual and Automation), create comprehensive and reusable test cases for each web-based feature or fix.
+- Write test cases in BDD format (Cucumber language) and follow the Figma design specification for the feature.
+- The purpose is to validate the functional aspects of the feature and ensure it meets the defined requirements.
+
+Context
+- Environment: Web product; Squash is used for test case management.
+- Development Story: Each feature/task has a PRD (Product Requirement Document) containing Definition of Done and Acceptance Criteria. This PRD is the primary guide for creating test cases.
+- User-provided image (Figma): Test cases may reference Figma for visual/UI validation when relevant to functional acceptance.
+
+Test Case Categories
+- Functional Test Cases: Focus on logic and functional behavior (e.g., input validation, user interactions).
+- Visual Test Cases: Focus on UI presentation, layout, and responsiveness (kept separate from functional scope).
+
+Clarity Requirement
+- Write clear, structured test cases so the title alone communicates to FE and BE what is being validated.
+
+Reference Examples (titles)
+- 001. User can open Add New User form modal.
+- 002. IF Password == empty => Show error "Password can't be empty"
+- 003. IF ConfirmPassword == empty => Show error "Please enter the confirm password"
+- 004. IF Password NOT meet requirements => Show error "Password must contain min. 8 chars, uppercase, lowercase, and numbers"
+- 005. IF ConfirmPassword != Password => Show error "Password confirmation does not match. Please check and try again."
+- 006. IF Password meets all requirements => Show green check for Password field
+- 007. IF all fields valid && user clicks "Add User" button => Create user & show success message
+- 008. IF Password == empty && ConfirmPassword == empty => Disable "Add User" button
+- 009. IF new user created => Redirect to User Management table
+- 010. Show message "Successful Add New User"
+- 011. Show message "Failed Add New User"
+- 012. User can open Change Password modal by clicking "Change Password" button in User Management actions
+- 013. User fills Password field && password encrypted && complies with 4 password requirements (indicated by grey ellipse)
+- 014. User toggles password visibility by clicking eye icon
+- 015. User fills ConfirmPassword field && encrypted && matches Password
+- 016. User toggles confirm password visibility by clicking eye icon
+- 017. User clicks "Save Change" button => Password updated
+- 018. User clicks "X" or "Close" button => Modal closes & user list displayed
+- 019. IF Password NOT comply with requirements => Show red ellipse warning
+- 020. IF Password == empty => Show error "Password is required. Please enter your password."
+- 021. IF ConfirmPassword == empty => Show error "Password is required. Please enter your password confirmation."
+- 022. IF Password NOT meet requirements => Show error "Password must contain min. 8 chars, uppercase, lowercase, and numbers."
+
+Authoring Template (prompt)
+- Create test cases for the feature {Feature Name} with the following PRD:
+  {Insert the feature PRD here. The PRD must include Definition of Done and Acceptance Criteria for the feature under test.}
+- With the Figma design provided in the uploaded image(s):
+  {Attach or reference the relevant Figma designs.}
+- I need test cases for {Feature Name}. Testing focus includes:
+  {Scope Testing:}
+  Functional Testing: Filter input validations and functional flows (e.g., form validation, system logic).
+
+Notes
+- Use English sentences for all generated outputs.
+- Follow strict BDD structure: Feature → Scenario → Given/When/Then (+ And as needed).
+- Keep titles concise and indicative of the validation target.
+
+
+=== BDD Step Templates (Given / When / Then) ===
+
+Given (preconditions)
+- the user is authenticated and on the User Management page
+- the Add New User form modal is open
+- the Change Password modal is open for user "{username} ({email})"
+- all mandatory fields are empty
+- a valid user exists in the system
+
+When (actions)
+- the user clicks "Add New User" button
+- the user clicks "Change Password" in User Management actions
+- the user types "{value}" into the "{Field}" field
+- the user clears the "{Field}" field
+- the user toggles the eye icon on the "{Field}" field
+- the user clicks "Save Change" button
+- the user clicks "X" or "Close" button on the modal
+
+Then (observable functional results)
+- the Add New User form modal is displayed
+- the Change Password modal is displayed with correct header and user info
+- an inline error is shown under "{Field}" with text "{Exact message}"
+- the requirement indicators for password validity turn green/red accordingly
+- the "Add User" button is disabled
+- the password inputs are masked by default and can be revealed when toggled
+- the user is redirected to the User Management table
+- a success message "{Exact message}" is displayed
+- a failure message "{Exact message}" is displayed
+
+And (additional acceptance criteria)
+- the form preserves other valid field values
+- client-side validation prevents submission until all required fields are valid
+- server responds with appropriate status and message when submitted
+
+
+Example Feature and Scenarios (short samples)
+
+Feature: User Management — Change Password
+
+Scenario: 001. User can open Change Password modal
+  Given the user is authenticated and on the User Management page
+  When the user clicks "Change Password" in User Management actions
+  Then the Change Password modal is displayed with correct header and user info
+
+Scenario: 002. IF Password == empty => Show error "Password can't be empty"
+  Given the Change Password modal is open for user "{username} ({email})"
+  And the user clears the "Password" field
+  When the user clicks "Save Change" button
+  Then an inline error is shown under "Password" with text "Password can't be empty"
+  And the "Save Change" button remains disabled
+
+Scenario: 003. IF Password meets all requirements => Update password successfully
+  Given the Change Password modal is open for user "{username} ({email})"
+  And the user types a valid value into the "Password" field
+  And the user types the same valid value into the "Confirm Password" field
+  When the user clicks "Save Change" button
+  Then a success message "Password updated" is displayed
+  And the modal closes and the user list is displayed
+
+
+=== Given/When/Then Title Skeletons (Functional — Provided) ===
+
+Test case title: 001. User can open Add New User form modal.
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 002. IF Password == empty => Show error "Password can't be empty"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 003. IF ConfirmPassword == empty => Show error "Please enter the confirm password"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 004. IF Password NOT meet requirements => Show error "Password must contain min. 8 chars, uppercase, lowercase, and numbers"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 005. IF ConfirmPassword != Password => Show error "Password confirmation does not match. Please check and try again."
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 006. IF Password meets all requirements => Show green check for Password field
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 007. IF all fields valid && user clicks "Add User" button => Create user & show success message
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 008. IF Password == empty && ConfirmPassword == empty => Disable "Add User" button
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 009. IF new user created => Redirect to User Management table
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 010. Show message "Successful Add New User"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 011. Show message "Failed Add New User"
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 012. User can open Change Password modal by clicking "Change Password" button in User Management actions
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 013. User fills Password field && password encrypted && complies with 4 password requirements (indicated by grey ellipse)
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 014. User toggles password visibility by clicking eye icon
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 015. User fills ConfirmPassword field && encrypted && matches Password
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 016. User toggles confirm password visibility by clicking eye icon
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 017. User clicks "Save Change" button => Password updated
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 018. User clicks "X" or "Close" button => Modal closes & user list displayed
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 019. IF Password NOT comply with requirements => Show red ellipse warning
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 020. IF Password == empty => Show error "Password is required. Please enter your password."
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 021. IF ConfirmPassword == empty => Show error "Password is required. Please enter your password confirmation."
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]
+
+Test case title: 022. IF Password NOT meet requirements => Show error "Password must contain min. 8 chars, uppercase, lowercase, and numbers."
+Test Steps:
+Given [Initial context or state (e.g., user is on the login page)]
+When [User action or event (e.g., user clicks on 'Add User' button)]
+And [Additional actions or events (e.g., user fills in the form fields)]
+Then [Expected result or outcome (e.g., success message is shown)]

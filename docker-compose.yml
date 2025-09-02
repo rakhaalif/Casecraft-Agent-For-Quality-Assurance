@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  qa-telegram-bot:
+    image: yudicandrak/qa-telegram-bot:latest
+    # build: .
+    env_file:
+      - .env
+    restart: unless-stopped
