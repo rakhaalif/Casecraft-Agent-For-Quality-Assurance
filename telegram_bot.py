@@ -211,34 +211,6 @@ class TelegramQABot:
         print("✅ Telegram QA Bot initialized successfully")
 
 
-    def get_monitoring_status(self):
-        """Get current monitoring status untuk debugging"""
-        status = {
-            "squash_monitor_available": self.squash_monitor is not None,
-            "squash_integration_available": self.squash_integration is not None,
-            "test_cases_loaded": 0,
-            "monitoring_active": False,
-            "last_update_check": "Never",
-            "background_monitoring": False
-        }
-        
-        if self.squash_monitor:
-            monitor_status = self.squash_monitor.get_status()
-            status.update({
-                "monitoring_active": True,
-                "background_monitoring": monitor_status.get('is_monitoring', False),
-                "last_hash": monitor_status.get('last_hash', 'Unknown')
-            })
-        
-        if self.squash_integration and hasattr(self.squash_integration, 'discovered_test_cases'):
-            status["test_cases_loaded"] = len(self.squash_integration.discovered_test_cases)
-        
-        return status
-    def load_custom_knowledge(self):
-        """No-op knowledge loader (dependency removed)."""
-        return ""
-
-
     # Removed unused: create_fallback_examples (no references)
     
     
@@ -267,7 +239,7 @@ class TelegramQABot:
         # Callback query handler
         self.application.add_handler(CallbackQueryHandler(self.handle_callback_query))
 
-        # Error handler
+        # Err   or handler
         self.application.add_error_handler(self.error_handler)  # type: ignore[arg-type]
 
     async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

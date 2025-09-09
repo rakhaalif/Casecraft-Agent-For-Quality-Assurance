@@ -1,9 +1,11 @@
-version: "3.9"
-
 services:
   qa-telegram-bot:
-    image: yudicandrak/qa-telegram-bot:latest
-    # build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "rakhaalif/casecraft-agent:latest"
     env_file:
       - .env
+    environment:
+      - BOT_FORCE=1
     restart: unless-stopped

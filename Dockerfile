@@ -26,9 +26,9 @@ RUN python -m pip install --upgrade pip \
 # Copy application source
 COPY . .
 
-# Env variables will be injected at runtime, not build time
-ENV telegram_bot_token=""
-ENV google_api_key=""
+# Env variables will be injected at runtime (compose/env-file). Uppercase to match code env lookups.
+ENV TELEGRAM_BOT_TOKEN=""
+ENV GOOGLE_API_KEY=""
 
 # Non-root user for better security
 RUN useradd -m appuser \
