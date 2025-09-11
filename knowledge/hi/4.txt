@@ -1,0 +1,7 @@
+4. Internet Status - View
+
+Gambar 4. Internet Status View Netmonk Hi
+
+Internet Status - View menampilkan grafik historis dari status (Online, Stop & Unknown) dari sebuah
+nomor internet yang dipantau. Grafik dapat ditampilkan berdasarkan periode yang diinginkan oleh
+pengguna. Terdapat juga nilai SLA (availability) sebagai acuan performa layanan dari nomor internet.

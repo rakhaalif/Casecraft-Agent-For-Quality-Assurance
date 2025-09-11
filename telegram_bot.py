@@ -160,6 +160,8 @@ class TelegramQABot:
 
         # Initialize user sessions
         self.user_sessions = {}
+        # Cache product-specific knowledge (loaded lazily after selection)
+        self.product_knowledge = {}
         # Disable Squash integrations/monitor by default
         self.squash_integration = None
         self.squash_monitor = None
@@ -375,6 +377,20 @@ class TelegramQABot:
             logger.warning(f"Could not send typing action: {e}")
         
         try:
+            # Enforce product selection before accepting requirements in generate/testcases modes
+            if user_session.get('mode') in ('testcases', 'generate') and 'product' not in user_session:
+                # Show product selection menu
+                keyboard = [
+                    [InlineKeyboardButton("Prime", callback_data="select_product_prime"),
+                     InlineKeyboardButton("Hi", callback_data="select_product_hi"),
+                     InlineKeyboardButton("Portal", callback_data="select_product_portal")],
+                    [InlineKeyboardButton("← Back", callback_data="test_type_menu")]
+                ]
+                await update.message.reply_text(
+                    "🧩 Silakan pilih produk terlebih dahulu sebelum mengirim requirements:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
             # Global collection mode guard: capture any incoming text as part of the collection
     # ✅ Safe user ID extraction
             if user_session.get('mode') not in ('modify_testcase', 'modify_selected_testcase') \
@@ -383,11 +399,10 @@ class TelegramQABot:
                 # Avoid duplicate first-text insertion: only append if different from last recorded
                 # Prevent double-counting the first text captured during classify -> collection transition
                 if context.user_data.get('__collection_initial_text_loaded'):
+                    # Flag indicates the first text was already inserted (e.g., via image classification)
+                    # Consume the flag and SKIP appending this turn to prevent starting at 2.
                     context.user_data.pop('__collection_initial_text_loaded', None)
-                    # Do not append this same text again if identical to last pending
-                    if not texts or texts[-1] != user_message:
-                        # Only append if user sends a NEW text after entering collection
-                        texts.append(user_message)
+                    pass
                 else:
                     if not texts or texts[-1] != user_message:
                         texts.append(user_message)
@@ -478,7 +493,7 @@ class TelegramQABot:
                     ],
                     [
                         InlineKeyboardButton("↩️ Revert Changes", callback_data=f"revert_changes_{user_id}"),
-                        [InlineKeyboardButton("← Back to Main", callback_data="back_main")]
+                        InlineKeyboardButton("← Back to Main", callback_data="back_main")
                     ]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -590,7 +605,7 @@ class TelegramQABot:
                         combined_text = (combined_text + ("\n\n" if combined_text else '') + f"User prompt: {user_message}").strip()
                     processing_msg = await update.message.reply_text("⏳ Generating...")
                     try:
-                        response = await self._agent_generate(last_type, combined_text, last_images)
+                        response = await self._agent_generate(last_type, combined_text, last_images, user_id=user_id)
                     finally:
                         try:
                             await processing_msg.delete()
@@ -1003,10 +1018,32 @@ class TelegramQABot:
         ]
         return InlineKeyboardMarkup(keyboard)
 
-    async def _agent_generate(self, test_type: str, text: str = "", images: Optional[List[Any]] = None) -> str:
-        """Route generation through AgentManager if available for clearer split."""
+    async def _agent_generate(self, test_type: str, text: str = "", images: Optional[List[Any]] = None, user_id: Optional[int] = None) -> str:
+        """Route generation through AgentManager; prepend product knowledge for the specific user if set."""
+        product_prefix = ""
+        try:
+            if user_id is not None and user_id in self.user_sessions:
+                sess = self.user_sessions.get(user_id, {})
+                prod = sess.get('product')
+                if prod:
+                    knowledge = self.product_knowledge.get(prod, "")
+                    if knowledge:
+                        product_prefix = f"[PRODUCT: {prod.upper()} KNOWLEDGE]\n{knowledge}\n\n"
+            else:
+                # Fallback: first available product (legacy behavior)
+                for _uid, sess in self.user_sessions.items():
+                    if sess.get('product'):
+                        prod = sess['product']
+                        knowledge = self.product_knowledge.get(prod, "")
+                        if knowledge:
+                            product_prefix = f"[PRODUCT: {prod.upper()} KNOWLEDGE]\n{knowledge}\n\n"
+                        break
+        except Exception:
+            pass
+        augmented_text = f"{product_prefix}{text}" if product_prefix and text else (product_prefix or text)
+
         if getattr(self, 'agent_manager', None):
-            result = await self.agent_manager.generate(test_type, text, images or [])
+            result = await self.agent_manager.generate(test_type, augmented_text, images or [])
             try:
                 route = self.agent_manager.get_last_route() if hasattr(self.agent_manager, 'get_last_route') else None
                 logging.getLogger(__name__).info("Agent route used: %s", route)
@@ -1016,8 +1053,8 @@ class TelegramQABot:
         # Minimal fallback to preserve behavior if manager not initialized
         imgs = images or []
         if imgs:
-            return await self.generate_multimodal_test_cases_multi(imgs, text or "", test_type)
-        return await self.generate_testcases_from_text(text or "", test_type)
+            return await self.generate_multimodal_test_cases_multi(imgs, augmented_text or "", test_type)
+        return await self.generate_testcases_from_text(augmented_text or "", test_type)
 
     async def analyze_image_only(self, image: PILImage.Image, context_text: str = "") -> str:
         """Analyze image without text requirements via VisualAgent."""
@@ -1844,7 +1881,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                 preview = (aggregated_text or "")[:200].replace("\n", " ")
                 logger.debug(f"[CollectGenerate] Aggregated text preview: {preview}")
                 await self.safe_edit_message(query, f"🔄 Generating using {img_count} image(s) + {text_count} text...")
-                response = await self._agent_generate(final_type, aggregated_text, imgs)
+                response = await self._agent_generate(final_type, aggregated_text, imgs, user_id=user_id)
                 # Clear collection but keep last result for export
                 context.user_data.pop('collect_requirements_mode', None)
                 context.user_data.pop('collected_images', None)
@@ -2117,7 +2154,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                         _uid = query.from_user.id if query.from_user else 0
                         # After export, show only the opposite-type switch per request
                         opposite = 'visual' if test_type == 'functional' else 'functional'
-                        to_label = "To Visual" if opposite == 'visual' else "Switch To Functional"
+                        to_label = "To Visual" if opposite == 'visual' else "To Functional"
                         to_callback = f"regen_switch_{opposite}_{_uid}"
                         file_reply_markup = InlineKeyboardMarkup([
                             [
@@ -2210,7 +2247,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                             logger.info(f"[ImageOnly->Collect] Using {img_count} image(s) and {text_count} text . type={test_type}, agg_text_len={len(aggregated_text)}")
                             preview = aggregated_text[:200].replace("\n", " ")
                             logger.debug(f"[ImageOnly->Collect] Aggregated text preview: {preview}")
-                            response = await self._agent_generate(test_type, aggregated_text, imgs)
+                            response = await self._agent_generate(test_type, aggregated_text, imgs, user_id=user_id)
                         else:
                             print(f"🔍 DEBUG: Calling generate_image_only_test_cases...")
                             response = await self.generate_image_only_test_cases(pending_image, test_type)
@@ -2319,11 +2356,11 @@ Bot akan combine dengan image untuk comprehensive test case generation."""
                         imgs = context.user_data.get('collected_images', []) or []
                         txts = context.user_data.get('collected_texts', []) or []
                         aggregated_text = (pending_text or '') + ("\n\n" if pending_text and txts else '') + "\n\n".join(txts)
-                        response = await self._agent_generate(effective_type, aggregated_text, imgs)
+                        response = await self._agent_generate(effective_type, aggregated_text, imgs, user_id=user_id)
                     else:
                         # Process test case generation from text only
                         aggregated_text = pending_text or ''
-                        response = await self._agent_generate(effective_type, aggregated_text, [])
+                        response = await self._agent_generate(effective_type, aggregated_text, [], user_id=user_id)
                     
                     # Store for export and last sources for regenerate
                     context.user_data['last_generated_test_cases'] = response
@@ -2420,7 +2457,7 @@ Bot akan combine dengan image untuk comprehensive test case generation."""
                 # Mirror the post-export keyboard: show only the opposite-type switch
                 export_type = info.get('type', self._resolve_last_type_for_regen(context.user_data))
                 opposite = 'visual' if export_type == 'functional' else 'functional'
-                to_label = "To Visual" if opposite == 'visual' else "Switch To Functional"
+                to_label = "To Visual" if opposite == 'visual' else "To Functional"
                 to_callback = f"regen_switch_{opposite}_{rid}"
                 file_reply_markup = InlineKeyboardMarkup([
                     [
@@ -2469,7 +2506,7 @@ Bot akan combine dengan image untuk comprehensive test case generation."""
                 if src_text or src_imgs:
                     # Direct regenerate
                     await self.safe_edit_message(query, "🔄 Regenerating Functional test cases with same requirements...")
-                    response = await self._agent_generate('functional', src_text, src_imgs)
+                    response = await self._agent_generate('functional', src_text, src_imgs, user_id=rid)
                     context.user_data['last_generated_test_cases'] = response
                     context.user_data['last_test_type'] = 'functional'
                     await self.send_large_text_message(context.bot, query.message.chat_id, response)
@@ -2487,7 +2524,7 @@ Bot akan combine dengan image untuk comprehensive test case generation."""
                 src_imgs = context.user_data.get('last_sources_images', [])
                 if src_text or src_imgs:
                     await self.safe_edit_message(query, "🎨 Regenerating Visual test cases with same requirements...")
-                    response = await self._agent_generate('visual', src_text, src_imgs)
+                    response = await self._agent_generate('visual', src_text, src_imgs, user_id=rid)
                     context.user_data['last_generated_test_cases'] = response
                     context.user_data['last_test_type'] = 'visual'
                     await self.send_large_text_message(context.bot, query.message.chat_id, response)
@@ -2557,7 +2594,23 @@ Bot akan combine dengan image untuk comprehensive test case generation."""
             elif query.data.startswith("regen_same_"):
                 rid = int(query.data.split("_")[-1])
                 # Set mode to accept user's prompt to refine/regenerate
+                if rid not in self.user_sessions:
+                    self.user_sessions[rid] = {}
                 self.user_sessions[rid]['mode'] = 'testcases'
+                # Ensure product still selected; if not, force selection before accepting prompt
+                if 'product' not in self.user_sessions[rid]:
+                    prod_keyboard = [
+                        [InlineKeyboardButton("Prime", callback_data="select_product_prime"),
+                         InlineKeyboardButton("Hi", callback_data="select_product_hi"),
+                         InlineKeyboardButton("Portal", callback_data="select_product_portal")],
+                        [InlineKeyboardButton("← Back", callback_data="test_type_menu")]
+                    ]
+                    await self.safe_edit_message(
+                        query,
+                        "🧩 Pilih Produk terlebih dahulu sebelum regenerate dengan requirements yang sama:",
+                        reply_markup=InlineKeyboardMarkup(prod_keyboard)
+                    )
+                    return
                 context.user_data['regen_mode'] = 'same_requirements'
                 await self.safe_edit_message(
                     query,
@@ -2736,6 +2789,59 @@ Bot akan combine dengan image for better generation results."""
                         reply_markup=reply_markup
                     )
 
+            # PRODUCT SELECTION (triggered manually if user hasn't picked yet)
+            elif query.data.startswith("select_product_"):
+                product = query.data.replace("select_product_", "")
+                valid_products = {"prime", "hi", "portal"}
+                if product not in valid_products:
+                    await query.answer("❌ Produk tidak dikenal")
+                    return
+                # Store product in user session
+                if user_id not in self.user_sessions:
+                    self.user_sessions[user_id] = {}
+                self.user_sessions[user_id]['product'] = product
+                # Lazy load knowledge
+                if product not in self.product_knowledge:
+                    self.product_knowledge[product] = self._load_product_knowledge(product)
+                # Start collection mode immediately
+                context.user_data['collect_requirements_mode'] = True
+                context.user_data.setdefault('collected_texts', [])
+                context.user_data.setdefault('collected_images', [])
+                kb_len = len(self.product_knowledge.get(product, ""))
+                coll_keyboard = [
+                    [InlineKeyboardButton("➕ Add More Text", callback_data=f"collect_more_text_{user_id}"),
+                     InlineKeyboardButton("➕ Add Image", callback_data=f"collect_add_image_{user_id}")],
+                    [InlineKeyboardButton("✅ Generate Now", callback_data=f"collect_generate_{user_id}"),
+                     InlineKeyboardButton("🗑️ Reset", callback_data=f"collect_reset_{user_id}")],
+                    [InlineKeyboardButton("🔄 Ganti Produk", callback_data="choose_product_menu"),
+                     InlineKeyboardButton("← Back", callback_data="choose_product_menu")]
+                ]
+                await self.safe_edit_message(
+                    query,
+                    (
+                        f"🧠 Product '{product.capitalize()}' dipilih (knowledge {kb_len} chars).\n"
+                        f"🧺 Collection mode aktif. Kirim text atau gambar sekarang."
+                    ),
+                    reply_markup=InlineKeyboardMarkup(coll_keyboard)
+                )
+                return
+
+            elif query.data == "choose_product_menu":
+                current_product = self.user_sessions.get(user_id, {}).get('product')
+                keyboard = [
+                    [InlineKeyboardButton("Prime" + (" ✅" if current_product=="prime" else ""), callback_data="select_product_prime"),
+                     InlineKeyboardButton("Hi" + (" ✅" if current_product=="hi" else ""), callback_data="select_product_hi"),
+                     InlineKeyboardButton("Portal" + (" ✅" if current_product=="portal" else ""), callback_data="select_product_portal")],
+                    [InlineKeyboardButton("← Back", callback_data="test_type_menu")]
+                ]
+                label = "🧩 Pilih produk untuk context generation:" + (f" (Saat ini: {current_product.upper()})" if current_product else "")
+                await self.safe_edit_message(
+                    query,
+                    label,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+
             elif query.data.startswith("generate_"):
                 generate_type = query.data.replace("generate_", "")
                 
@@ -2746,6 +2852,18 @@ Bot akan combine dengan image for better generation results."""
                 # Sync pending flags to avoid cross-mode bleed
                 context.user_data.pop('pending_test_type', None)
                 context.user_data['pending_generate_type'] = generate_type
+                # Selalu tampilkan menu produk terlebih dahulu (walau sudah pernah memilih) agar user bisa ganti sebelum collect
+                prod_keyboard = [
+                    [InlineKeyboardButton("Prime", callback_data="select_product_prime"),
+                     InlineKeyboardButton("Hi", callback_data="select_product_hi"),
+                     InlineKeyboardButton("Portal", callback_data="select_product_portal")],
+                    [InlineKeyboardButton("← Back", callback_data="test_type_menu")]
+                ]
+                await query.edit_message_text(
+                    "🧩 Pilih Produk yang diinginkan sebelum memasukkan requirements:",
+                    reply_markup=InlineKeyboardMarkup(prod_keyboard)
+                )
+                return
                 
                 generate_messages = {
                     "functional": """🧪 Functional Test Case Generation
@@ -2791,6 +2909,18 @@ Kirim requirements untuk visual test generation:"""
                     self.user_sessions[user_id] = {}
                 self.user_sessions[user_id]['mode'] = 'testcases'
                 self.user_sessions[user_id]['test_type'] = test_type
+                # Selalu tampilkan menu produk setelah pilih jenis test
+                prod_keyboard = [
+                    [InlineKeyboardButton("Prime", callback_data="select_product_prime"),
+                     InlineKeyboardButton("Hi", callback_data="select_product_hi"),
+                     InlineKeyboardButton("Portal", callback_data="select_product_portal")],
+                    [InlineKeyboardButton("← Back", callback_data="mode_testcases")]
+                ]
+                await query.edit_message_text(
+                    "🧩 Pilih Produk yang diinginkan sebelum memasukkan requirements:",
+                    reply_markup=InlineKeyboardMarkup(prod_keyboard)
+                )
+                return
                 
                 type_messages = {
                     "functional": """🔧 Functional Test Generation Mode
@@ -4302,6 +4432,40 @@ Kirim requirements untuk visual test generation:"""
         except Exception as e:
             logger.error(f"Error generating test cases from text: {e}")
             return f"❌ Error generating test cases: {str(e)}\n\nPlease try again or check your requirements format."
+
+    def _load_product_knowledge(self, product: str) -> str:
+        """Load knowledge text for a specific product from knowledge/<product> folder.
+
+        Concatenates .txt, .md, .json (as raw text) files up to a safe size limit.
+        """
+        base_dir = os.path.join(os.getcwd(), 'knowledge', product.lower())
+        if not os.path.isdir(base_dir):
+            return f"(No knowledge directory found for product '{product}')"
+        patterns = ["*.txt", "*.md", "*.json"]
+        contents: List[str] = []
+        total_chars = 0
+        max_chars = 60_000  # prevent oversized prompt
+        for pat in patterns:
+            for path in glob.glob(os.path.join(base_dir, pat)):
+                try:
+                    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                        data = f.read().strip()
+                    if not data:
+                        continue
+                    if total_chars + len(data) > max_chars:
+                        remaining = max_chars - total_chars
+                        if remaining <= 0:
+                            break
+                        data = data[:remaining]
+                    contents.append(f"\n--- FILE: {os.path.basename(path)} ---\n{data}\n")
+                    total_chars += len(data)
+                except Exception as e:
+                    contents.append(f"\n--- FILE: {os.path.basename(path)} (error reading: {e}) ---\n")
+            if total_chars >= max_chars:
+                break
+        if not contents:
+            return f"(No knowledge files found in {base_dir})"
+        return f"Product Knowledge [{product}]:\n" + "\n".join(contents)
 
 
     # ------------------------------

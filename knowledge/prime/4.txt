@@ -1,0 +1,7 @@
+D. Dashboard Website/API Status
+
+Dashboard yang menampilkan grafik jumlah down, up status & pause/unknown dari website atau API
+yang dimonitor serta detail down status dan response time. Netmonk menyediakan pilihan interval
+waktu diperiksanya status website atau API secara berkala sehingga dapat disesuaikan dengan kebutu-
+han perusahaan, apakah ingin real-time atau dilakukan dalam interval yang lebih renggang agar tidak
+mengganggu trafik dari website atau API tersebut.

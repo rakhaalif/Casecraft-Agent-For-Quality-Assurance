@@ -1,0 +1,19 @@
+C. Dashboard
+Managerial
+
+Dashboard yang disediakan
+untuk IT Manager maupun
+ruangan
+ditampilkan di
+Network Operation Center
+(NOC) agar dapat mengeta-
+hui kondisi terkini dari jarin-
+gan dalam format yang tel-
+ah dirangkum agar ringkas.
+Informasi dari network per-
+formance dashboard kami
+bagi menjadi informasi Top
+5 & Bottom 5 Starred Link
+Status, Device Status (up/
+down), Link Utilization dan
+Starred Link Utilization.

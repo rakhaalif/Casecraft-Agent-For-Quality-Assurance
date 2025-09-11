@@ -1,0 +1,8 @@
+5. Reporting Availability
+
+Gambar 5. Reporting Availability Netmonk Hi
+
+Pengguna dapat mengunduh laporan terkait performansi layanan berupa 2 tipe SLA (availability) secara
+otomatis yaitu SLA Jam Kerja (availability active hours) dan SLA Harian (availability all hours) dengan for-
+mat Excel dari rangkuman data hidup/mati. Pengambilan data dapat disesuaikan berdasarkan periode
+waktu yang diinginkan.

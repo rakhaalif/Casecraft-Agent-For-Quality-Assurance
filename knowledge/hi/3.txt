@@ -1,0 +1,9 @@
+3. Internet Status
+
+Gambar 3. Internet Status Netmonk Hi
+
+Internet Status menampilkan status nomor internet dalam bentuk tabel. Data status internet yang dita-
+mpilkan pada tabel merupakan data status terkini dari layanan yang dipantau. Pengguna dapat memi-
+lih category untuk menampilkan data nomor internet pada kategori tertentu. Terdapat fitur filter by
+status (Online, Stop & Unknown) untuk memudahkan user melihat nomor internet apa saja sesuai status
+internet terkini.

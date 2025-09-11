@@ -1,0 +1,30 @@
+A. Grafik SLA dari informasi ICMP Availability dan Uptime Availability
+
+Pada menu detail yang terdapat
+di device status, Netmonk Prime
+dapat menampilkan
+informasi
+dari ICMP availability dan uptime
+history. Informasi-informasi ini
+dapat digunakan untuk men-
+gukur tingkat SLA suatu jaringan.
+Dari segi tampilan waktu, user
+dapat merubah waktu yang din-
+ginkan. Dari tampilan informasi
+hari ini, minggu lalu dan bahkan
+bulan lalu.
+
+Fitur yang berfungsi untuk me-
+lihat status perangkat masih
+dalam kondisi hidup (up) mau-
+pun mati (down). Sehingga tim
+operasional lebih mudah dalam
+memonitoring perangkat tanpa
+mengecek secara manual. Selain
+itu, terdapat export data dengan
+format excel untuk mempermu-
+dah dalam sistem pelaporan. Fi-
+tur detail berguna untuk melihat
+grafik performansi harian, ming-
+guan maupun bulanan suatu
+perangkat.

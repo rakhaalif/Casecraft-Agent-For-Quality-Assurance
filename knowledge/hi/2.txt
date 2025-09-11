@@ -1,0 +1,7 @@
+2. Dashboard
+
+Gambar 2. Dashboard Netmonk Hi
+
+Dashboard yang menampilkan Speedometer chart dari semua nomor internet yang terdaftar, detail wak-
+tu kapan data status internet terakhir kali diperbarui, total semua nomor internet yang dipantau, jum-
+lah nomor internet yang terdeteksi hidup maupun mati.

@@ -1,0 +1,21 @@
+c. Coba Demo
+
+Coba Demo memungkinkan calon pelanggan untuk mencoba aplikasi
+
+Netmonk Prime secara gratis. Penting untuk dicatat bahwa Netmonk Prime versi
+
+demo ini hanya dapat digunakan sebagai view only, yang memungkinkan
+
+pengguna untuk melihat
+
+informasi tanpa kemampuan untuk melakukan
+
+perubahan atau penghapusan data. Meskipun demikian, menggunakan
+
+Netmonk Prime versi demo ini memungkinkan calon pelanggan untuk memiliki
+
+pemahaman yang lebih baik tentang Netmonk Prime dan bagaimana aplikasi ini
+
+dapat membantu tim operasional IT dalam melakukan monitoring perangkat,
+
+web/API, atau server.

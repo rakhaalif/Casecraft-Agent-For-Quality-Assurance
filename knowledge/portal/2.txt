@@ -1,0 +1,11 @@
+b. Coba Gratis
+
+Coba Gratis memungkinkan calon pelanggan untuk mencoba aplikasi
+
+Netmonk Prime. Pengunjung dapat mengisi formulir pendaftaran dengan
+
+informasi seperti: nama lengkap, nomor telepon , nama perusahaan & jenis
+
+perusahaan. Setelah permintaan demo diajukan, selanjutnya sistem akan
+
+mengirimkan email aktivasi Netmonk Prime untuk digunakan selama 3 bulan.

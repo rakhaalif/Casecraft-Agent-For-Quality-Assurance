@@ -1,0 +1,20 @@
+I. Cetak Laporan Rangkuman ke PDF
+
+Kemudahan dalam mendapatkan laporan rangkuman penggunaan jaringan selama periode tertentu
+serta dapat langsung diunduh ke dalam format PDF tanpa harus diunduh dan diolah secara manual
+menggunakan aplikasi spreadsheet untuk parameter seperti: availability perangkat, statistik penggu-
+naan link, statistik penggunaan CPU/RAM/Storage.
+
+Selain dapat memudahkan mendapatkan rangkuman jaringan, pengguna juga dapat mengakses fitur
+reporting per interface maupun mengunduh laporan terkait response time dan status dari website/
+API serta serve yang dimonitor. Pengambilan data dapat disesuaikan berdasarkan periode waktu yang
+diinginkan.
+
+Network Performance Report
+
+Interface Link Report
+
+
+Website/API Report
+
+Server Report

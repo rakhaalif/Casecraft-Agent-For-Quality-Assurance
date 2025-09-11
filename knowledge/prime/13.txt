@@ -1,0 +1,20 @@
+C. Link Utilization
+
+Fitur yang berfungsi untuk me-
+lihat suatu keadaan real dari
+link trafik layanan untuk me-
+lihat threshold apakah sudah
+memasuki ambang batas “nor-
+mal, warning, maupun critical”.
+Persentase ambang batas terse-
+but dapat di sesuaikan berdasar-
+kan kebutuhan user. Hal
+ini
+berguna untuk mengantisipasi
+supaya utilization nya masih da-
+lam keadaan sehat maupun per-
+lu penanganan.
+
+Terdapat detail untuk setiap node yang running maupun yang paused. Netmonk Prime juga menye-
+diakan data export excel guna untuk mempermudah dalam sistem pelaporan. Fitur detail berguna
+untuk melihat grafik performansi harian, mingguan maupun bulanan suatu node di link utilization.

@@ -1,0 +1,25 @@
+F. Dashboard
+
+Container Status
+
+Menampilkan
+info yang
+berkaitan dengan kondisi
+container
+(running/stop/
+pause), uptime, persentase
+penggunaan CPU, memo-
+ry, dan network pada serv-
+er, rata-rata operasi input/
+output suatu disk, serta
+daftar process yang sedang
+berjalan pada sebuah con-
+tainer.
+
+Container Membantu pe-
+mantauan aplikasi yang
+berjalan di server & melaku-
+kan optimalisasi kapasitas
+server yang memiliki berb-
+agai aplikasi yang terinstall
+di dalamnya.

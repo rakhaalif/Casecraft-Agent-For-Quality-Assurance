@@ -1,0 +1,12 @@
+F. CPU Status
+
+Fitur yang berfungsi untuk me-
+lihat kondisi CPU suatu perang-
+kat. Sehingga tim operasional
+lebih mudah dalam memantau
+CPU perangkat dan mengesti-
+masi kemampuannya berdasar-
+kan usage pemakaian. Selain
+itu, terdapat export data dengan
+format excel untuk mempermu-
+dah dalam sistem pelaporan.

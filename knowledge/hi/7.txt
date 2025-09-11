@@ -1,0 +1,56 @@
+7. Alerting
+
+Fitur Proactive Reporting dirancang untuk mempermu-
+dah pengguna dalam memantau nomor internet yang
+dimonitor. Setiap bulan, pengguna akan menerima
+laporan ringkasan melalui WhatsApp yang mencakup
+data penting mengenai perangkat yang dipantau sela-
+ma 30 hari terakhir. Laporan ini meliputi:
+• Jumlah nomor internet yang dimonitor: Informasi
+mengenai berapa banyak nomor internet yang se-
+dang dimonitor.
+
+• Ketersediaan (Availability): Data mengenai persen-
+tase waktu ketersediaan nomor internet yang di-
+monitor.
+
+Dengan laporan bulanan ini, pengguna dapat dengan
+mudah mendapatkan gambaran menyeluruh tentang
+nomor internet, serta memungkinkan pengguna untuk
+merespons dengan cepat terhadap setiap perubahan
+atau masalah yang mungkin terjadi.
+
+Gambar 7. Contoh alerting Netmonk Hi via telegram
+
+Alerting dapat dikirimkan ke telegram group atau email pengguna apabila nomor internet yang dimoni-
+tor terdeteksi mati. Jika nomor internet yang mati terdeteksi hidup kembali, fitur alerting juga akan men-
+girimkan notifikasi ke pengguna. Fitur ini membuat pengguna mendapatkan notifikasi secara otomatis
+tanpa harus berada di depan layar monitor 24x7.
+
+
+Benefit Fitur Netmonk HI Bagi User
+
+
+Arsitektur 04
+
+Sistem
+
+Sistem Netmonk Hi menampilkan data monitoring yang bersumber dari Sistem Monitoring Internal
+Telkom untuk menjamin validitas data yang ditampilkan oleh sistem kepada pengguna (customer).
+
+Gambar 7. Aristektur Sistem Netmonk Hi
+
+
+Let’s create
+meaningful
+collaborations!
+
+Jl. Garnisun No.1, RT.5/RW.4, Karet Semanggi,
+Kecamatan Setiabudi, Kota Jakarta Selatan,
+Daerah Khusus Ibukota Jakarta 12930
+
+info@netmonk.id
+
++62 811 971 9810
+
+www.netmonk.id

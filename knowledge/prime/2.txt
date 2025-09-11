@@ -1,0 +1,12 @@
+B. Dashboard Operasional
+
+Dashboard yang disediakan untuk tim operasional IT perusahaan agar dapat secara efektif memu-
+satkan perhatian pada perangkat-perangkat maupun bagian jaringan (link) yang butuh diperhatikan,
+seperti: Perangkat yang mati atau tidak terdeteksi, link jaringan dengan persentase penggunaan yang
+tinggi berdasarkan kapasitasnya, link jaringan yang memang dikategorikan sebagai gateway, perangkat
+jaringan dengan penggunaan CPU/RAM/Storage yang tinggi.
+
+Tim kami merancang sebuah tampilan guna meningkatkan experience pelanggan dalam mendapatkan
+informasi secara cepat. Selain itu, dengan adanya tampilan warna yang membedakan dari berbagai
+status, akan mempercepat dalam mengambil keputusan, baik keputusan secara operasional maupun
+keputusan strategis perusahaan.

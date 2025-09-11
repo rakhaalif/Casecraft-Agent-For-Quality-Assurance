@@ -1,0 +1,5 @@
+G. Dashboard-Network Map
+
+Selain menyediakan tampilan berupa dashboard operasional dan dashboard managerial, terdapat fi-
+tur berdasarkan persebaran perangkat di map/topology. Sehingga user dapat lebih mudah melihat
+perangkat yang sedang bermasalah maupun perangkat dalam pengawasan berdasarkan lokasi.

@@ -1,0 +1,9 @@
+1. Seamless Login
+
+Gambar 1. Tampilan chat OTP
+
+Netmonk Hi menggunakan metode one-time password (OTP) yang dikirim melalui email atau aplikasi
+pesan instan seperti WhatsApp (WA) sebagai alat otentikasi. Pengguna hanya perlu memasukkan OTP
+yang diterima untuk masuk ke dalam aplikasi tanpa perlu memasukkan kredensial login tambahan.
+Diharapkan dengan adanya Seamless Login akan memungkinkan kemudahan pengguna & keamanan
+Netmonk Hi.

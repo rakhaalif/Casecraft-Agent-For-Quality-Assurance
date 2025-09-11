@@ -1,0 +1,11 @@
+D. Starred Link
+
+Fitur yang berfungsi untuk meli-
+hat upstream dan downstream
+suatu perangkat. Sehingga tim
+operasional lebih mudah dalam
+memantau link trafik perang-
+kat. Selain itu, terdapat export
+data dengan format excel untuk
+mempermudah dalam sistem
+pelaporan.

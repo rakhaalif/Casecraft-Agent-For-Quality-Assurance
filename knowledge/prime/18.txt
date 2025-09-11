@@ -1,0 +1,13 @@
+H. DiskIO Status
+
+Fitur yang berfungsi untuk meli-
+hat kondisi Disk di suatu server.
+Sehingga tim operasional lebih
+mudah dalam memantau peng-
+gunaan Disk server dan menges-
+kemampuannya ber-
+timasi
+dasarkan load average. Selain
+itu, terdapat export data dengan
+format excel untuk mempermu-
+dah dalam sistem pelaporan.

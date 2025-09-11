@@ -1,0 +1,10 @@
+J. User Group Management
+
+Fitur ini dapat digunakan untuk mempermudah mengatur hak akses karyawan sesuai dengan divisi.
+Terdapat 1 akun administrator utama memiliki hak akses khusus untuk semua user group. Fitur ini
+membantu perusahaan menjaga keamanan, meningkatkan kinerja, dan memastikan bahwa informasi
+yang relevan dapat diakses oleh pihak yang berwenang sesuai dengan kebutuhan.
+
+
+Fitur
+Tambahan.

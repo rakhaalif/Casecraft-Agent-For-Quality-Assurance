@@ -1,0 +1,71 @@
+K. SNMP Template telah Disiapkan
+
+OID yang digunakan untuk mengambil data dari perangkat jaringan yang dimonitor telah
+disediakan secara default sehingga tim IT Jaringan tidak perlu mencari sendiri template
+untuk setiap perangkat.
+
+
+Benefit
+Netmonk Prime ver.6
+
+01. Benefit Bagi Manajemen
+
+• Meningkatkan performa operasional ekosistem
+IT perusahaan melalui notifikasi proaktif dan
+rangkuman dari laporan kondisi perangkat jar-
+ingan, web/API maupun server.
+
+• Optimasi operasional IT bagi perusahaan yang
+memiliki keterbatasan anggaran pengelolan IT
+infrastruktur (affordable).
+
+• Data perangkat jaringan yang tersedia dapat
+membantu perusahaan dalam melakukan pen-
+gambilan keputusan yang lebih baik terkait in-
+vestasi infrastruktur perusahaan.
+
+• Efisiensi penggunaan anggaran IT perusahaan,
+karena penggunaan Netmonk hanya mem-
+butuhkan resource yang kecil dan perang-
+kat-perangkat yang didaftarkan bisa multi-ven-
+dor sehingga penggunaan tools monitoring
+lebih efisien.
+
+02.
+Benefit Bagi Operasional IT
+• Mempercepat dan mempermudah tim opera-
+sional IT dalam mendapatkan informasi penting
+dan terkini mengenai kondisi jaringan, web/API
+dan server di perusahaan (proactive approach).
+
+• Memudahkan tim operasional IT dalam melaku-
+
+kan audit perangkat jaringan perusahaan.
+
+• Modernisasi IT tool network monitoring dari
+segi tampilan maupun penggunaannya (simpli-
+fikasi).
+
+• Sistem kinerja Netmonk Prime yang memungk-
+inkan IT operasional untuk mengoptimalisasi
+performanya dalam memonitoring dan men-
+gaudit jaringan tanpa harus secara langsung
+memonitoring selama 24x7 jam.
+
+
+Arsitektur
+
+
+Let’s create
+meaningful
+collaborations!
+
+Jl. Garnisun No.1, RT.5/RW.4, Karet Semanggi,
+Kecamatan Setiabudi, Kota Jakarta Selatan,
+Daerah Khusus Ibukota Jakarta 12930
+
+info@netmonk.id
+
++62 811 971 9810
+
+www.netmonk.id

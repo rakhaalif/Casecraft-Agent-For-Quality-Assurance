@@ -1,0 +1,7 @@
+H. Alarm Via Telegram/E-mail
+
+Alarm akan dikirimkan ke Telegram group maupun individu, Hal ini ditujukan agar tim operasional IT
+dapat lebih proaktif tanpa harus 24x7 berada di depan layar monitor. Dengan adanya ini kami harapkan
+experience pelanggan semakin dimanjakan, karena dengan fitur ini tim operasional seperti mempunyai
+asisten pribadi yang dapat mengecek performansi network, website/API, serta server suatu perusahaan
+secara otomatis dan real-time.

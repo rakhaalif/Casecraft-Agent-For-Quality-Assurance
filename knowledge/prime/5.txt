@@ -1,0 +1,6 @@
+E. Dashboard Server Status (Windows & Linux)
+
+Dashboard yang menampilkan jumlah server dengan OS Windows maupun Linux berdasarkan status-
+nya (up atau down) dari total keseluruhan server yang dimonitor. Informasi lebih detail dapat dilihat
+di halaman Server Status berupa persentase penggunaan CPU, Memory, dan Network pada server,
+rata-rata operasi input/output suatu disk, serta daftar process yang sedang berjalan.

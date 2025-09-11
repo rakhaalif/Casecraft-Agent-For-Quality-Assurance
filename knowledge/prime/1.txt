@@ -1,0 +1,46 @@
+A. Quality of Service (QoS)
+
+QoS adalah singkatan dari Quality of Service, yang merupakan cara untuk memastikan bahwa jarin-
+gan komputer atau internet memberikan kinerja yang baik kepada pengguna. Dengan adanya QoS
+Monitoring, pengguna dapat mengetahui seberapa baik atau buruk kinerja jaringan yang digunakan.
+Fitur QoS Monitoring pada Netmonk Prime memungkinkan pengguna untuk secara aktif memonitor
+kualitas layanan (Quality of Service) dari jaringan mereka. Dengan fitur ini, pengguna dapat memoni-
+tor tiga parameter utama:
+
+• Latency: Merupakan waktu yang diperlukan paket data untuk melakukan perjalanan dari sum-
+ber ke tujuan dalam jaringan. Latency yang rendah mengindikasikan bahwa kualitas jaringan
+berfungsi secara efisien dan efektif.
+Jitter: Mengukur variasi dalam waktu keterlambatan pengiriman paket data dalam jaringan.
+Jitter yang tinggi dapat mengakibatkan ketidakstabilan dalam kualitas layanan.
+
+•
+
+• Packet Loss: Mengindikasikan jumlah paket data yang hilang selama transmisi melalui jarin-
+gan. Tingkat kehilangan paket yang tinggi dapat menyebabkan gangguan dalam komunikasi
+dan kinerja aplikasi.
+
+
+Dengan demikian, dengan menggunakan fitur QoS Monitoring pada Netmonk Prime pengguna dapat
+mengidentifikasi masalah yang mungkin terjadi dan mengambil langkah-langkah perbaikan yang diper-
+lukan.
+
+1. Quality of Service Graphic
+
+Fitur Grafik pada QoS Monitoring memungkinkan pengguna untuk melihat data history dari parame-
+ter QoS yang dimonitor, seperti latency, jitter, dan packet loss dalam bentuk grafik untuk periode wak-
+tu tertentu. Dengan visualisasi yang jelas dan mudah dimengerti, pengguna dapat perubahan yang
+signifikan dalam parameter QoS, sehingga dapat melakukan tindakan untuk menjaga kinerja jaringan
+yang optimal.
+
+
+2. Quality of Service Reporting
+
+Fitur Reporting QoS Monitoring memungkinkan pengguna untuk membuat laporan yang rinci tentang
+parameter QoS yang dimonitor, seperti latency, jitter , dan packet loss. Pengguna dapat membuat lapo-
+ran dengan memilih periode waktu tertentu dan jenis laporan (laporan dalam bentuk grafik atau tabel),
+Laporan ini dapat digunakan untuk menganalisis kinerja jaringan dan mengevaluasi kebutuhan per-
+baikan atau peningkatan.
+
+Pengguna dapat memiliki visibilitas yang lebih baik terhadap kualitas layanan jaringan mereka, memu-
+ngkinkan mereka untuk mengatasi masalah dengan lebih cepat, mengoptimalkan kinerja jaringan, dan
+meningkatkan pengalaman pengguna akhir.

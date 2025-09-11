@@ -1,0 +1,13 @@
+G. Storage Status
+
+Fitur yang berfungsi untuk me-
+lihat kondisi Storage suatu
+perangkat. Sehingga tim opera-
+sional lebih mudah dalam me-
+mantau Storage perangkat dan
+mengestimasi kemampuannya
+berdasarkan average storage us-
+age. Selain itu, terdapat export
+data dengan format excel untuk
+mempermudah dalam sistem
+pelaporan.

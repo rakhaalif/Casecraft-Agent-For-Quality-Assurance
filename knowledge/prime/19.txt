@@ -1,0 +1,4 @@
+I. Grafik Data Hingga Beberapa Tahun ke Belakang
+
+Data yang dikumpulkan dapat disimpan hingga waktu yang ditentukan oleh user (default
+retensi 2 tahun), dan dapat dilihat dalam bentuk grafik pada menu history.
