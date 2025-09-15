@@ -474,18 +474,13 @@ class TelegramQABot:
                     except Exception as e:
                         logger.warning(f"Could not delete processing message: {e}")
                 
+                # Apply modification now that we have the user's instruction
+                modified_test_cases = await self.modify_specific_test_case(
+                    test_cases_for_modification,
+                    user_message
+                )
                 # Send modified test cases
                 await self.send_long_message(update, modified_test_cases)
-                
-                # Store modified version
-                context.user_data['last_generated_test_cases'] = modified_test_cases
-                context.user_data['original_test_cases'] = test_cases_for_modification  # Keep backup
-                
-                # Reset mode and clean up
-                self.user_sessions[user_id]['mode'] = 'general'
-                context.user_data.pop('test_cases_for_modification', None)
-                context.user_data.pop('selected_test_case', None)
-                
                 keyboard = [
                     [
                         InlineKeyboardButton("🔧 Modify More Test Cases", callback_data=f"modify_testcase_{user_id}"),
@@ -536,12 +531,6 @@ class TelegramQABot:
                 except Exception as e:
                     logger.error(f"Error sending processing message: {e}")
                     processing_msg = None
-                
-                # Apply modification
-                modified_test_cases = await self.modify_specific_test_case(
-                    test_cases_for_modification, 
-                    user_message
-                )
                 
                 # Delete processing message
                 if processing_msg:
@@ -1825,7 +1814,9 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                     context.user_data['collect_requirements_mode'] = True
                 context.user_data.setdefault('collected_images', [])
                 context.user_data.setdefault('collected_texts', [])
-                await self.safe_edit_message(query, "📝 Send additional text requirements now. They will be added to the collection.")
+                uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else user_id
+                kb = [[InlineKeyboardButton("⬅️ Back", callback_data=f"collect_back_menu_{uid}")]]
+                await self.safe_edit_message(query, "📝 Kirim teks tambahan sekarang. (Gunakan Back untuk kembali ke menu koleksi)", reply_markup=InlineKeyboardMarkup(kb))
                 return
 
             elif query.data.startswith("collect_add_image_"):
@@ -1834,7 +1825,25 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                     context.user_data['collect_requirements_mode'] = True
                 context.user_data.setdefault('collected_images', [])
                 context.user_data.setdefault('collected_texts', [])
-                await self.safe_edit_message(query, "📸 Send another image (screenshot/PRD/UI). It will be added to the collection.")
+                uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else user_id
+                kb = [[InlineKeyboardButton("⬅️ Back", callback_data=f"collect_back_menu_{uid}")]]
+                await self.safe_edit_message(query, "📸 Kirim gambar (screenshot/PRD/UI) lainnya. (Gunakan Back untuk kembali ke menu koleksi)", reply_markup=InlineKeyboardMarkup(kb))
+                return
+
+            elif query.data.startswith("collect_back_menu_"):
+                # Return to collection dashboard preserving current counts
+                uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else user_id
+                imgs = context.user_data.get('collected_images', []) or []
+                texts = context.user_data.get('collected_texts', []) or []
+                img_count = len(imgs)
+                text_count = len(texts)
+                kb = [
+                    [InlineKeyboardButton("➕ Add More Text", callback_data=f"collect_more_text_{uid}"), InlineKeyboardButton("➕ Add Image", callback_data=f"collect_add_image_{uid}")],
+                    [InlineKeyboardButton("✅ Generate Now", callback_data=f"collect_generate_{uid}"), InlineKeyboardButton("🗑️ Reset", callback_data=f"collect_reset_{uid}")],
+                    [InlineKeyboardButton("← Back to Test Type Menu", callback_data="test_type_menu")]
+                ]
+                summary = f"🧺 Collection mode.\n\n📄 Text: {text_count}\n🖼️ Images: {img_count}"
+                await self.safe_edit_message(query, summary, reply_markup=InlineKeyboardMarkup(kb))
                 return
 
             elif query.data.startswith("collect_reset_"):
