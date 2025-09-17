@@ -2001,32 +2001,12 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                     # Restore original version
                     context.user_data['last_generated_test_cases'] = original_test_cases
                     context.user_data.pop('original_test_cases', None)
-                    
-                    await query.edit_message_text(
-                        "↩️ Changes Reverted Successfully!\n\n"
-                        "✅ Test cases restored to original version\n"
-                        "🔄 All modifications have been undone"
-                    )
-                    
-                    # Show options after revert
-                    keyboard = [
-                        [
-                            InlineKeyboardButton("🔧 Modify Again", callback_data=f"modify_testcase_{user_id}"),
-                            InlineKeyboardButton("📊 Export to Excel", callback_data=f"export_excel_{user_id}")
-                        ],
-                        [
-                            InlineKeyboardButton("← Back to Main", callback_data="back_main")
-                        ]
-                    ]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    
-                    await context.bot.send_message(
-                        chat_id=query.message.chat_id,
-                        text="Select your next action:",
-                        reply_markup=reply_markup
-                    )
-                else:
-                    await query.edit_message_text("❌ No original version found to revert to.")
+                await self.safe_edit_message(query, "✅ Perubahan dibatalkan. Menggunakan versi original.")
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text="Select next action:",
+                    reply_markup=self.get_post_generation_keyboard(user_id)
+                )
 
             # TEST CASE SELECTION HANDLERS
             elif query.data.startswith("select_tc_"):
