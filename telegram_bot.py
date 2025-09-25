@@ -23,6 +23,11 @@ from exporters.squash_export import (
 from agent_manager import AgentManager
 from agent_functional import FunctionalAgent
 from agent_visual import VisualAgent
+try:
+    # Optional: BM25-based RAG index
+    from rag_engine import get_index  # type: ignore
+except Exception:  # pragma: no cover
+    get_index = None  # type: ignore
 
 # Load environment variables
 load_dotenv()
@@ -264,8 +269,7 @@ class TelegramQABot:
             
             welcome_message = f"""🤖 Selamat datang di SQA Netmonk Assistant Bot, {user_name}!
 
-    Saya dapat membantu Anda dengan:
-    - 🔍 Generate test cases (dari PRD atau gambar)
+    Saya dapat membantu Anda dengan Generate test cases dengan otomatis dari requirements atau UI design.
 
     Gunakan /help untuk melihat semua perintah yang tersedia."""
             
@@ -1008,28 +1012,52 @@ class TelegramQABot:
         return InlineKeyboardMarkup(keyboard)
 
     async def _agent_generate(self, test_type: str, text: str = "", images: Optional[List[Any]] = None, user_id: Optional[int] = None) -> str:
-        """Route generation through AgentManager; prepend product knowledge for the specific user if set."""
+        """Route generation through AgentManager. Prefer true RAG retrieval per product; fallback to full knowledge prefix."""
         product_prefix = ""
+        rag_context = ""
+        rag_results: List[Dict[str, Any]] = []
+        prod = None
+        # Ensure query_text is always defined even if an early exception occurs
+        query_text = (text or "").strip()
         try:
+            # Resolve product from user session (if any)
             if user_id is not None and user_id in self.user_sessions:
                 sess = self.user_sessions.get(user_id, {})
                 prod = sess.get('product')
-                if prod:
-                    knowledge = self.product_knowledge.get(prod, "")
-                    if knowledge:
-                        product_prefix = f"[PRODUCT: {prod.upper()} KNOWLEDGE]\n{knowledge}\n\n"
             else:
-                # Fallback: first available product (legacy behavior)
+                # Fallback: first available session product (legacy)
                 for _uid, sess in self.user_sessions.items():
                     if sess.get('product'):
                         prod = sess['product']
-                        knowledge = self.product_knowledge.get(prod, "")
-                        if knowledge:
-                            product_prefix = f"[PRODUCT: {prod.upper()} KNOWLEDGE]\n{knowledge}\n\n"
                         break
+
+            # Build true RAG context if possible and query text exists
+            if query_text and get_index is not None:
+                try:
+                    idx = get_index()
+                    # Build compact, per-product context (BM25 top-k)
+                    # Capture detailed results for visible proof as well
+                    rag_results = idx.search(query_text, k=5, product=(prod.lower() if isinstance(prod, str) else None))  # type: ignore
+                    rag_context = idx.build_context(query=query_text, k=5, max_chars=4000, product=(prod.lower() if isinstance(prod, str) else None))  # type: ignore
+                except Exception:
+                    rag_context = ""
+                    rag_results = []
+
+            # Fallback: legacy full product knowledge prefix if no rag_context
+            if (not rag_context) and prod:
+                knowledge = self.product_knowledge.get(prod, "")
+                if knowledge:
+                    product_prefix = f"[PRODUCT: {str(prod).upper()} KNOWLEDGE]\n{knowledge}\n\n"
         except Exception:
+            # On any resolution failure, leave rag_context empty and use whatever is available
             pass
-        augmented_text = f"{product_prefix}{text}" if product_prefix and text else (product_prefix or text)
+
+        # Compose final augmented prompt
+        if rag_context and query_text:
+            augmented_text = f"[RAG CONTEXT]\n{rag_context}\n\n[USER REQUIREMENTS]\n{query_text}"
+        else:
+            # Either no query text or RAG unavailable: use product_prefix + text
+            augmented_text = (f"{product_prefix}{text}" if product_prefix and text else (product_prefix or text))
 
         if getattr(self, 'agent_manager', None):
             result = await self.agent_manager.generate(test_type, augmented_text, images or [])
@@ -1038,12 +1066,58 @@ class TelegramQABot:
                 logging.getLogger(__name__).info("Agent route used: %s", route)
             except Exception:
                 pass
+            # Append visible proof of RAG sources if enabled
+            try:
+                if not hasattr(self, 'show_rag_proof'):
+                    self.show_rag_proof = True  # default on for testing visibility
+                if getattr(self, 'show_rag_proof', False):
+                    proof_lines: List[str] = []
+                    if rag_results:
+                        for i, r in enumerate(rag_results, 1):
+                            proof_lines.append(f"{i}. {r.get('product','?')}/{r.get('file','?')}  score={r.get('score',0):.2f}")
+                    else:
+                        if product_prefix and prod:
+                            proof_lines.append(f"Fallback: used full product knowledge for {str(prod).upper()}")
+                        else:
+                            proof_lines.append("No product context used")
+                    result = (
+                        result
+                        + "\n\n--- RAG SOURCES (Proof) ---\n"
+                        + "\n".join(proof_lines)
+                    )
+            except Exception:
+                # Do not fail generation if proof formatting encounters an issue
+                pass
             return result
+
         # Minimal fallback to preserve behavior if manager not initialized
         imgs = images or []
         if imgs:
-            return await self.generate_multimodal_test_cases_multi(imgs, augmented_text or "", test_type)
-        return await self.generate_testcases_from_text(augmented_text or "", test_type)
+            text_only = await self.generate_multimodal_test_cases_multi(imgs, augmented_text or "", test_type)
+        else:
+            text_only = await self.generate_testcases_from_text(augmented_text or "", test_type)
+        # Append proof for fallback path as well
+        try:
+            if not hasattr(self, 'show_rag_proof'):
+                self.show_rag_proof = True
+            if getattr(self, 'show_rag_proof', False):
+                proof_lines2: List[str] = []
+                if rag_results:
+                    for i, r in enumerate(rag_results, 1):
+                        proof_lines2.append(f"{i}. {r.get('product','?')}/{r.get('file','?')}  score={r.get('score',0):.2f}")
+                else:
+                    if product_prefix and prod:
+                        proof_lines2.append(f"Fallback: used full product knowledge for {str(prod).upper()}")
+                    else:
+                        proof_lines2.append("No product context used")
+                text_only = (
+                    text_only
+                    + "\n\n--- RAG SOURCES (Proof) ---\n"
+                    + "\n".join(proof_lines2)
+                )
+        except Exception:
+            pass
+        return text_only
 
     async def analyze_image_only(self, image: PILImage.Image, context_text: str = "") -> str:
         """Analyze image without text requirements via VisualAgent."""
@@ -1816,7 +1890,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                 context.user_data.setdefault('collected_texts', [])
                 uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else user_id
                 kb = [[InlineKeyboardButton("⬅️ Back", callback_data=f"collect_back_menu_{uid}")]]
-                await self.safe_edit_message(query, "📝 Kirim teks tambahan sekarang. (Gunakan Back untuk kembali ke menu koleksi)", reply_markup=InlineKeyboardMarkup(kb))
+                await self.safe_edit_message(query, "📝 Kirim teks tambahan sekarang.", reply_markup=InlineKeyboardMarkup(kb))
                 return
 
             elif query.data.startswith("collect_add_image_"):
@@ -1827,7 +1901,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                 context.user_data.setdefault('collected_texts', [])
                 uid = int(query.data.split('_')[-1]) if query.data.split('_')[-1].isdigit() else user_id
                 kb = [[InlineKeyboardButton("⬅️ Back", callback_data=f"collect_back_menu_{uid}")]]
-                await self.safe_edit_message(query, "📸 Kirim gambar (screenshot/PRD/UI) lainnya. (Gunakan Back untuk kembali ke menu koleksi)", reply_markup=InlineKeyboardMarkup(kb))
+                await self.safe_edit_message(query, "📸 Kirim gambar (screenshot/PRD/UI) lainnya.", reply_markup=InlineKeyboardMarkup(kb))
                 return
 
             elif query.data.startswith("collect_back_menu_"):
@@ -2778,7 +2852,7 @@ Bot akan combine dengan image for better generation results."""
                         reply_markup=reply_markup
                     )
 
-            # PRODUCT SELECTION (triggered manually if user hasn't picked yet)
+            
             elif query.data.startswith("select_product_"):
                 product = query.data.replace("select_product_", "")
                 valid_products = {"prime", "hi", "portal"}
@@ -3006,8 +3080,7 @@ Kirim requirements untuk visual test generation:"""
                 
                 welcome_message = f"""🤖 Selamat datang di SQA Netmonk Assistant Bot, {user_name}!
 
-    Saya dapat membantu Anda dengan:
-    - 🔍 Generate test cases (dari PRD atau gambar)
+    Saya dapat membantu Anda dengan Generate test cases dengan otomatis dari requirements atau UI design.
 
     Gunakan /help untuk melihat semua perintah yang tersedia."""
                 
