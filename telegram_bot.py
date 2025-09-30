@@ -126,7 +126,7 @@ class TelegramQABot:
             except Exception:
                 psutil = None
             if os.path.exists(self._lock_file):
-                try:
+                try: 
                     with open(self._lock_file, 'r', encoding='utf-8') as lf:
                         pid_str = lf.read().strip()
                     if pid_str.isdigit():
@@ -155,10 +155,62 @@ class TelegramQABot:
         # Initialize bot token (ensure type is str for type checkers)
         self.token = os.getenv('TELEGRAM_BOT_TOKEN') or ""
 
-        # Initialize Gemini AI model
+        # Initialize Gemini AI model (Gemini 2.0 flash/flash-lite only)
         try:
             genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))  # type: ignore[attr-defined]
-            self.model = genai.GenerativeModel(os.getenv('GEMINI_MODEL', 'gemini-1.5-flash'))  # type: ignore[attr-defined]
+
+            def _normalize_name(n: str) -> str:
+                try:
+                    return n.split('/')[-1] if isinstance(n, str) and '/' in n else n
+                except Exception:
+                    return n
+
+            def _list_models_safe():
+                try:
+                    return list(genai.list_models())  # type: ignore[attr-defined]
+                except Exception:
+                    return []
+
+            available = _list_models_safe()
+            avail_names = set([_normalize_name(getattr(m, 'name', '') or getattr(m, 'model', '')) for m in available])
+
+            # Environment overrides
+            env_text = os.getenv('GEMINI_MODEL')
+            env_vision = os.getenv('GEMINI_VISION_MODEL')
+
+            # Preferred 2.0 options (restricted)
+            pref_text = [n for n in [env_text, 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] if n]
+            pref_vision = [n for n in [env_vision, 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] if n]
+
+            # Choose first available; if list_models not available, we still try to instantiate
+            def _pick(name_list):
+                for n in name_list:
+                    if not avail_names or n in avail_names:
+                        return n
+                return name_list[-1]
+
+            self.base_model_name = _pick(pref_text)
+            self.vision_model_name = _pick(pref_vision)
+
+            # Instantiate models
+            self.model = genai.GenerativeModel(self.base_model_name)  # type: ignore[attr-defined]
+            try:
+                self.vision_model = genai.GenerativeModel(self.vision_model_name)
+            except Exception:
+                # Fall back to base; multimodal calls will try alternates
+                self.vision_model = self.model
+
+            # Candidate list for multimodal calls (2.0 only, restricted)
+            self.multimodal_candidates = []
+            for name in [self.vision_model_name, 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
+                if name and name not in self.multimodal_candidates:
+                    self.multimodal_candidates.append(name)
+
+            # Candidate list for text calls (2.0 only, restricted)
+            self.text_candidates = []
+            for name in [self.base_model_name, 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
+                if name and name not in self.text_candidates:
+                    self.text_candidates.append(name)
         except Exception as e:
             print(f"Failed to initialize Gemini AI: {e}")
             raise
@@ -230,6 +282,8 @@ class TelegramQABot:
         self.application.add_handler(CommandHandler("format_testcase", self.format_testcase_command))
         self.application.add_handler(CommandHandler("reload_knowledge", self.reload_knowledge_command))
         self.application.add_handler(CommandHandler("reset", self.reset_command))
+        # Diagnostics: show active Gemini 2.0 models
+        self.application.add_handler(CommandHandler("models", self.models_command))
 
     # Squash commands removed (feature not implemented)
 
@@ -340,6 +394,79 @@ class TelegramQABot:
             f"{self.knowledge_base}\n"
         )
         await update.message.reply_text("ℹ️ Knowledge reloaded (no-op): external knowledge files are disabled.")
+
+    async def models_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            active_text = getattr(self, 'base_model_name', '(unset)')
+            active_vision = getattr(self, 'vision_model_name', '(unset)')
+            text_list = ', '.join(getattr(self, 'text_candidates', []) or [])
+            vision_list = ', '.join(getattr(self, 'multimodal_candidates', []) or [])
+            await update.message.reply_text(
+                f"Active (text): {active_text}\nActive (vision): {active_vision}\nText fallbacks: {text_list}\nVision fallbacks: {vision_list}"
+            )
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error showing models: {e}")
+
+    # Centralized generators with 2.0-only fallbacks
+    def safe_generate(self, payload: Any):
+        """Generate content for text or array payloads using Gemini 2.0 only.
+
+        Retries across candidate list to avoid 404/unsupported errors.
+        """
+        candidates = (self.multimodal_candidates if isinstance(payload, list) else self.text_candidates) or []
+        last_err = None
+        tried = []
+        for name in candidates:
+            try:
+                tried.append(name)
+                model = self.model if name in (self.base_model_name, self.vision_model_name) else genai.GenerativeModel(name)
+                resp = model.generate_content(payload)
+                # Cache the working model names
+                if isinstance(payload, list):
+                    self.vision_model = model
+                    self.vision_model_name = name
+                else:
+                    self.model = model
+                    self.base_model_name = name
+                return resp
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                # Continue on not found/unsupported; break on others
+                if any(tok in msg for tok in ['404', 'not found', 'is not supported', 'unsupported']):
+                    continue
+                break
+        raise RuntimeError(f"All Gemini 2.0 attempts failed. Tried: {', '.join(tried)}. Last error: {last_err}")
+
+    async def models_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            base = getattr(self, 'base_model_name', '(unset)')
+            vision = getattr(self, 'vision_model_name', '(unset)')
+            cands = ', '.join(getattr(self, 'multimodal_candidates', []) or [])
+            await update.message.reply_text(
+                f"Active models (Gemini 2.0):\n- Text model: {base}\n- Vision model: {vision}\n- Multimodal fallbacks: {cands}"
+            )
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error showing models: {e}")
+
+    # Centralized multimodal generation with Gemini 2.0 fallbacks
+    def multimodal_generate(self, parts: list):
+        last_err: Exception | None = None
+        tried = []
+        candidates = list(getattr(self, 'multimodal_candidates', []) or [])
+        if not candidates:
+            candidates = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+        for name in candidates:
+            try:
+                tried.append(name)
+                # Prefer already-instantiated vision model
+                model = self.vision_model if getattr(self, 'vision_model_name', None) == name else genai.GenerativeModel(name)
+                return model.generate_content(parts)
+            except Exception as e:
+                last_err = e
+                logger.warning(f"Multimodal attempt failed on '{name}': {e}")
+                continue
+        raise RuntimeError(f"All multimodal attempts failed. Tried: {', '.join(tried)}. Last error: {last_err}")
 
     async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Reset user session and cached generation context."""
@@ -1438,13 +1565,13 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                                 # Format as 3-digit number
                                 if tc_num.isdigit():
                                     tc_num_formatted = f"{int(tc_num):03d}"
-                                    test_case_numbers.append(f"{tc_num_formatted}. {title[:50]}")
+                                    test_case_numbers.append(f"{tc_num_formatted}. {title}")
                                 else:
-                                    test_case_numbers.append(f"{tc_num}. {title[:50]}")
+                                    test_case_numbers.append(f"{tc_num}. {title}")
                             else:
                                 # Single group match
                                 content = match.group(1)
-                                test_case_numbers.append(f"{len(test_case_numbers)+1:03d}. {content[:50]}")
+                                test_case_numbers.append(f"{len(test_case_numbers)+1:03d}. {content}")
                             
                             logger.info(f"DEBUG: Matched pattern '{pattern}' on line: {line}")
                             matched = True
@@ -1462,8 +1589,8 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                         not line.startswith('•') and not line.startswith('-') and
                         ':' in line):
                         
-                        # Assign sequential number
-                        test_case_numbers.append(f"{len(test_case_numbers)+1:03d}. {line[:50]}")
+                        # Assign sequential number (keep the full line)
+                        test_case_numbers.append(f"{len(test_case_numbers)+1:03d}. {line}")
                         logger.info(f"DEBUG: Fallback match on line: {line}")
             
             # Remove duplicates while preserving order
@@ -1491,7 +1618,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                         meaningful_lines.append(line)
                 
                 for i, line in enumerate(meaningful_lines[:5]):  # Create max 5 generic test cases
-                    unique_test_cases.append(f"{i+1:03d}. {line[:50]}")
+                    unique_test_cases.append(f"{i+1:03d}. {line}")
                 
                 logger.info(f"DEBUG: Created {len(unique_test_cases)} generic test cases")
             
@@ -1519,8 +1646,10 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                 # No test cases detected; keep it minimal
                 reference_text += "(No test cases detected)"
             else:
-                for i, tc in enumerate(test_case_list[:20], 1):
-                    reference_text += f"{i}. {tc}\n"
+                # Show the real test case number and the full title once, avoiding double numbering
+                for tc in test_case_list[:20]:
+                    # tc format is like "001. Title ..." or "TC-001 Title ..."
+                    reference_text += f"• {tc}\n"
             # Keep message minimal; no long instructions
 
             # Determine which message object to use
@@ -1559,6 +1688,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                                 # Fallback: use index
                                 tc_number = f"{tc_index + 1:03d}"
                             
+                            # Keep button concise to avoid overflow; list above shows full titles
                             button_text = f"📝 TC-{tc_number}"
                             callback_data = f"select_tc_{tc_number}_{user_id}"
                             
@@ -1622,7 +1752,7 @@ Please generate {target} test cases based on this input, ensuring they follow ou
             except Exception as send_error:
                 logger.error(f"Error sending error message: {send_error}")
 
-    async def send_long_message(self, update: Update, text: str, max_length: int = 4000):
+    async def send_long_message(self, update: Update, text: str, max_length: int = 3500):
         """Send long messages by splitting them with improved formatting preservation"""
         try:
             # ✅ SAFETY CHECKS
@@ -1645,21 +1775,37 @@ Please generate {target} test cases based on this input, ensuring they follow ou
             except:
                 logger.error("Could not send error notification")
 
-    async def send_large_text_message_via_update(self, update: Update, text: str, max_length: int = 4000):
+    async def send_large_text_message_via_update(self, update: Update, text: str, max_length: int = 3500):
         """Send large text using update object"""
         if len(text) <= max_length:
             await update.message.reply_text(text)
             return
             
         # Split and send
-        chunks = self._split_text_intelligently(text, max_length)
+        # Reserve headroom for prefix to avoid trimming mid-block
+        safe_limit = max(500, max_length - 40)
+        chunks = self._split_text_intelligently(text, safe_limit)
         for i, chunk in enumerate(chunks):
-            if chunk.strip():
-                prefix = f"📄 Part {i+1}/{len(chunks)}\n\n" if len(chunks) > 1 else ""
+            if not chunk.strip():
+                continue
+            prefix = f"📄 Part {i+1}/{len(chunks)}\n\n" if len(chunks) > 1 else ""
+            try:
                 await update.message.reply_text(prefix + chunk)
-                await asyncio.sleep(0.5)  # Rate limiting
+            except BadRequest as br:
+                # Fallback: further split this chunk and send
+                msg = str(br)
+                if 'too long' in msg.lower() or 'message is too long' in msg:
+                    allow = max(300, max_length - len(prefix) - 50)
+                    sub_chunks = self._split_text_intelligently(chunk, allow)
+                    for sub in sub_chunks:
+                        if sub.strip():
+                            await update.message.reply_text((prefix if len(chunks) == 1 else '') + sub)
+                            await asyncio.sleep(0.3)
+                else:
+                    raise
+            await asyncio.sleep(0.4)  # slight pacing
 
-    async def send_large_text_message(self, bot, chat_id: int, text: str, max_length: int = 4000):
+    async def send_large_text_message(self, bot, chat_id: int, text: str, max_length: int = 3500):
         """Send large text messages by splitting them - for direct bot usage"""
         try:
             if not text or text.strip() == "":
@@ -1673,140 +1819,190 @@ Please generate {target} test cases based on this input, ensuring they follow ou
             cleaned_text = cleaned_text.strip()
             
             if len(cleaned_text) <= max_length:
-                await bot.send_message(chat_id=chat_id, text=cleaned_text)
-                return
+                try:
+                    await bot.send_message(chat_id=chat_id, text=cleaned_text)
+                    return
+                except BadRequest as br:
+                    if 'too long' not in str(br).lower():
+                        raise
             
-            # Split by logical sections for better readability
-            chunks = []
+            # Use the same intelligent splitter with headroom for the prefix
+            safe_limit = max(500, max_length - 40)
+            chunks = self._split_text_intelligently(cleaned_text, safe_limit)
             
-            # Try to split by test case sections first
-            test_case_sections = re.split(r'\n---\n', cleaned_text)
-            
-            if len(test_case_sections) > 1:
-                current_chunk = ""
-                
-                for section in test_case_sections:
-                    section = section.strip()
-                    if not section:
-                        continue
-                        
-                    # Check if adding this section would exceed limit
-                    if len(current_chunk) + len(section) + 10 > max_length:
-                        if current_chunk:
-                            chunks.append(current_chunk.strip())
-                            current_chunk = section
-                        else:
-                            # Section itself is too large, split by lines
-                            lines = section.split('\n')
-                            temp_chunk = ""
-                            for line in lines:
-                                if len(temp_chunk) + len(line) + 1 > max_length:
-                                    if temp_chunk:
-                                        chunks.append(temp_chunk.strip())
-                                        temp_chunk = line
-                                    else:
-                                        chunks.append(line[:max_length])
-                                else:
-                                    temp_chunk += "\n" + line if temp_chunk else line
-                            if temp_chunk:
-                                chunks.append(temp_chunk.strip())
-                    else:
-                        current_chunk += "\n---\n" + section if current_chunk else section
-                
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-            else:
-                # Fallback: split by paragraphs/lines
-                lines = cleaned_text.split('\n')
-                current_chunk = ""
-                
-                for line in lines:
-                    if len(current_chunk) + len(line) + 1 > max_length:
-                        if current_chunk:
-                            chunks.append(current_chunk.strip())
-                            current_chunk = line
-                        else:
-                            chunks.append(line[:max_length])
-                    else:
-                        current_chunk += "\n" + line if current_chunk else line
-                
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-            
-            # Send each chunk
+            # Send each chunk with guard
             for i, chunk in enumerate(chunks):
-                if chunk.strip():
-                    prefix = f"📄 Part {i+1}/{len(chunks)}\n\n" if len(chunks) > 1 else ""
+                if not chunk.strip():
+                    continue
+                prefix = f"📄 Part {i+1}/{len(chunks)}\n\n" if len(chunks) > 1 else ""
+                try:
                     await bot.send_message(chat_id=chat_id, text=prefix + chunk)
+                except BadRequest as br:
+                    msg = str(br)
+                    if 'too long' in msg.lower() or 'message is too long' in msg:
+                        allow = max(300, max_length - len(prefix) - 50)
+                        subs = self._split_text_intelligently(chunk, allow)
+                        for sub in subs:
+                            if sub.strip():
+                                await bot.send_message(chat_id=chat_id, text=(prefix if len(chunks) == 1 else '') + sub)
+                                await asyncio.sleep(0.3)
+                    else:
+                        raise
                     
         except Exception as e:
             logger.error(f"Error in send_large_text_message: {e}")
             await bot.send_message(chat_id=chat_id, text=f"❌ Error sending message: {str(e)}")
 
     def _split_text_intelligently(self, text: str, max_length: int) -> List[str]:
-        """Split text intelligently preserving test case structure"""
-        chunks = []
-        
-        # Clean text first
-        cleaned_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
-        cleaned_text = re.sub(r'[ \t]+', ' ', cleaned_text)
-        cleaned_text = cleaned_text.strip()
-        
-        # Try to split by test case sections first
-        test_case_sections = re.split(r'\n---\n', cleaned_text)
-        
-        if len(test_case_sections) > 1:
-            current_chunk = ""
-            
-            for section in test_case_sections:
-                section = section.strip()
-                if not section:
+        """Split text intelligently preserving test case structure.
+
+        Strategy:
+        - Keep 'preamble' (text before the first numbered case) in the first chunk.
+        - Split the main body by test case blocks (001., 002., ...). Pack whole blocks into chunks.
+        - If a single block exceeds max_length, split it by BDD step boundaries (Given/When/Then/And).
+        - Put epilogue (after the last case) into the last chunk; if it doesn't fit, create a final chunk.
+        - Avoid hard truncation inside a line whenever possible.
+        """
+        # Normalize whitespace
+        cleaned = re.sub(r'\r\n|\r', '\n', text or '')
+        cleaned = re.sub(r'\n\s*\n\s*\n+', '\n\n', cleaned).strip()
+
+        # Identify preamble, testcases, epilogue
+        lines = cleaned.split('\n')
+        tc_start_idx = None
+        tc_title_re = re.compile(r'^\s*(\d{1,3})\.\s+')
+        for i, ln in enumerate(lines):
+            if tc_title_re.match(ln):
+                tc_start_idx = i
+                break
+
+        preamble = ''
+        body_lines = lines
+        if tc_start_idx is not None and tc_start_idx > 0:
+            preamble = '\n'.join(lines[:tc_start_idx]).strip()
+            body_lines = lines[tc_start_idx:]
+
+        # Group into test case blocks
+        blocks: List[str] = []
+        current_block: List[str] = []
+        for ln in body_lines:
+            if tc_title_re.match(ln):
+                if current_block:
+                    blocks.append('\n'.join(current_block).strip())
+                    current_block = []
+            current_block.append(ln)
+        if current_block:
+            blocks.append('\n'.join(current_block).strip())
+
+        # Try to detect epilogue (text after last block) by checking if the original text ends with
+        # non-BDD summary markers commonly used in this bot
+        epilogue = ''
+        if blocks:
+            last_block_text = blocks[-1]
+            tail = cleaned.split(last_block_text, 1)[-1]
+            # Drop last_block_text itself; keep any trailing content (summary, etc.)
+            tail = tail[len(''):]  # no-op, clarity
+            if tail:
+                # Remove the exact last block from cleaned to compute epilogue reliably
+                cleaned_wo_last = cleaned.rsplit(last_block_text, 1)[0] + last_block_text
+                epilogue = cleaned[len(cleaned_wo_last):].strip()
+
+        # Helper to pack items into chunks without exceeding max_length
+        def pack_items(items: List[str], initial: List[str] | None = None) -> List[str]:
+            out: List[str] = []
+            buf = (initial or [])[:]
+            cur = ('\n\n'.join(buf)).strip() if buf else ''
+            for it in items:
+                it = it.strip()
+                if not it:
                     continue
-                    
-                # Check if adding this section would exceed limit
-                if len(current_chunk) + len(section) + 10 > max_length:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                        current_chunk = section
-                    else:
-                        # Section itself is too large, split by lines
-                        lines = section.split('\n')
-                        temp_chunk = ""
-                        for line in lines:
-                            if len(temp_chunk) + len(line) + 1 > max_length:
-                                if temp_chunk:
-                                    chunks.append(temp_chunk.strip())
-                                    temp_chunk = line
+                if not cur:
+                    cur = it
+                elif len(cur) + 2 + len(it) <= max_length:
+                    cur = cur + '\n\n' + it
+                else:
+                    # Flush current
+                    out.append(cur.strip())
+                    cur = it
+            if cur:
+                out.append(cur.strip())
+            return out
+
+        chunks: List[str] = []
+
+        # Start with preamble in the first chunk (split if needed)
+        if preamble:
+            if len(preamble) <= max_length:
+                chunks.append(preamble)
+            else:
+                # Split preamble by paragraphs/lines to fit
+                para_chunks = []
+                temp = ''
+                for ln in preamble.split('\n'):
+                    if len(temp) + 1 + len(ln) > max_length:
+                        if temp:
+                            para_chunks.append(temp)
+                            temp = ln
+                        else:
+                            # line too long, split on words
+                            words = ln.split(' ')
+                            linebuf = ''
+                            for w in words:
+                                if len(linebuf) + 1 + len(w) > max_length:
+                                    para_chunks.append(linebuf)
+                                    linebuf = w
                                 else:
-                                    chunks.append(line[:max_length])
-                            else:
-                                temp_chunk += "\n" + line if temp_chunk else line
-                        if temp_chunk:
-                            chunks.append(temp_chunk.strip())
-                else:
-                    current_chunk += "\n---\n" + section if current_chunk else section
-            
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-        else:
-            # Fallback: split by paragraphs/lines
-            lines = cleaned_text.split('\n')
-            current_chunk = ""
-            
-            for line in lines:
-                if len(current_chunk) + len(line) + 1 > max_length:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                        current_chunk = line
+                                    linebuf = (linebuf + ' ' + w).strip()
+                            if linebuf:
+                                para_chunks.append(linebuf)
                     else:
-                        chunks.append(line[:max_length])
-                else:
-                    current_chunk += "\n" + line if current_chunk else line
-            
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-        
-        return chunks
+                        temp = (temp + '\n' + ln) if temp else ln
+                if temp:
+                    para_chunks.append(temp)
+                chunks.extend(para_chunks)
+
+        # Now pack test case blocks, ensuring a block is not split; if oversized, split by BDD steps
+        def split_block_if_oversize(block: str) -> List[str]:
+            if len(block) <= max_length:
+                return [block]
+            # Split by BDD steps
+            steps = []
+            cur = []
+            for ln in block.split('\n'):
+                if re.match(r'^(Given|When|Then|And)\b', ln.strip(), flags=re.I):
+                    if cur:
+                        steps.append('\n'.join(cur).strip())
+                        cur = []
+                cur.append(ln)
+            if cur:
+                steps.append('\n'.join(cur).strip())
+            # Pack steps into sub-blocks
+            return pack_items(steps)
+
+        packed_blocks: List[str] = []
+        for b in blocks:
+            parts = split_block_if_oversize(b)
+            packed_blocks.extend(parts)
+
+        # Combine existing chunks (from preamble) with packed test case blocks
+        if packed_blocks:
+            if chunks:
+                remaining = max_length - len(chunks[-1]) - 2
+                if remaining > 0 and len(packed_blocks[0]) <= remaining:
+                    chunks[-1] = (chunks[-1] + '\n\n' + packed_blocks[0]).strip()
+                    packed_blocks = packed_blocks[1:]
+            chunks.extend(pack_items(packed_blocks))
+
+        # Append epilogue to the last chunk, or create a new one
+        if epilogue:
+            if chunks and len(chunks[-1]) + 2 + len(epilogue) <= max_length:
+                chunks[-1] = (chunks[-1] + '\n\n' + epilogue).strip()
+            else:
+                # split epilogue if needed
+                chunks.extend(pack_items([epilogue]))
+
+        # Final cleanup: ensure no empty chunks
+        return [c for c in (chunks or [cleaned]) if c and c.strip()]
 
     async def handle_callback_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle callback queries with better error handling"""

@@ -137,7 +137,7 @@ OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else 
             # Visual-only guardrails
             prompt += "\n\n" + self._visual_only_guidelines()
 
-            response = self.bot.model.generate_content(prompt)
+            response = self.bot.safe_generate(prompt)
             raw = (getattr(response, 'text', '') or '').strip()
             result = self.bot._finalize_output(raw, prompt, [prompt])
             result = self._enforce_bdd_and_type(result, max_count=user_limit)
@@ -229,7 +229,8 @@ CONTENT RULES:
             prompt += "\n\n" + self._visual_only_guidelines()
 
             parts = [prompt] + (images or [])
-            response = self.bot.model.generate_content(parts)
+            # Centralized Gemini 2.0 multimodal fallback
+            response = self.bot.multimodal_generate(parts)
             raw = (getattr(response, 'text', '') or '').strip()
             cleaned = self.bot._finalize_output(raw, prompt, [prompt])
             cleaned = self._enforce_bdd_and_type(cleaned, max_count=user_limit)
@@ -266,7 +267,7 @@ CONTENT RULES:
             )
             prompt += "\n\n" + self._visual_only_guidelines()
 
-            response = self.bot.model.generate_content([prompt, image])
+            response = self.bot.multimodal_generate([prompt, image])
             generated = (getattr(response, 'text', '') or '').strip()
             if not generated:
                 generated = (
@@ -314,8 +315,13 @@ CONTENT RULES:
                 if cur:
                     cases.append(cur)
                 num = m.group(1)
-                title = m.group(2).strip().rstrip('.')
-                cur = { 'num': num, 'title': title, 'steps': [] }
+                title_raw = m.group(2).strip().rstrip('.')
+                # If the title looks like a BDD step, record it to preserve as a step later
+                import re as _re0
+                is_bdd_title = _re0.match(r"^(Given|When|Then|And)\b", title_raw, flags=_re0.I) is not None
+                cur = { 'num': num, 'title': title_raw, 'steps': [] }
+                if is_bdd_title:
+                    cur['title_as_step'] = title_raw
             else:
                 if cur is None:
                     continue
@@ -339,7 +345,7 @@ CONTENT RULES:
                     m = pat.match(rest)
                     if not m:
                         break
-                    tokens.append(m.group(1).title())
+                    tokens.append(m.group(1).title())   
                     rest = rest[m.end():]
                 chosen = tokens[0] if tokens else 'When'
                 if chosen in ('When','Then') and len(tokens) > 1 and tokens[1].lower() == 'given':
@@ -347,6 +353,22 @@ CONTENT RULES:
                 return f"{chosen} {rest.strip()}".strip()
 
             steps = [sanitize(s) for s in steps]
+            # If the title originally contained a BDD step, make sure it is preserved as a step
+            tstep = case.get('title_as_step')
+            if tstep:
+                tstep_s = sanitize(tstep)
+                if not any(_re.match(rf"^{_re.escape(tstep_s)}$", x, flags=_re.I) for x in steps):
+                    # Insert based on the keyword
+                    if tstep_s.lower().startswith('given '):
+                        steps.insert(0, tstep_s)
+                    elif tstep_s.lower().startswith('when '):
+                        # Prefer after Given if present, else at start
+                        gi = next((i for i,x in enumerate(steps) if x.lower().startswith('given ')), None)
+                        insert_at = gi+1 if isinstance(gi,int) else 0
+                        steps.insert(insert_at, tstep_s)
+                    else:
+                        steps.append(tstep_s)
+
             has_given = any(s.startswith('Given ') for s in steps)
             has_when = any(s.startswith('When ') for s in steps)
             has_then = any(s.startswith('Then ') for s in steps)
@@ -357,6 +379,21 @@ CONTENT RULES:
             if not has_then:
                 steps.append('Then the visual state matches the expected UI (labels/icons/spacing/colors)')
             case['steps'] = steps
+            # Normalize title: avoid BDD keywords in the title; derive from Then/When if needed
+            def derive_title(ttl: str, stps: list[str]) -> str:
+                if _re.match(r"^(Given|When|Then|And)\b", ttl, flags=_re.I):
+                    # Prefer Then step for a "Verify ..." style
+                    for s in stps:
+                        if s.lower().startswith('then '):
+                            return ('Verify ' + s[5:].strip()).rstrip('.')
+                    for s in stps:
+                        if s.lower().startswith('when '):
+                            return s[5:].strip().rstrip('.')
+                    for s in stps:
+                        if s.lower().startswith('given '):
+                            return s[6:].strip().rstrip('.')
+                return ttl
+            case['title'] = derive_title(title, steps)
             return case
 
         cases = [ensure_gwt(c) for c in cases]
@@ -402,7 +439,7 @@ STRICT REQUIREMENTS:
 ✅ Visual assertions stay visual unless functional logic clearly stated in text
 
 Generate the normalized test cases now."""
-            response = self.bot.model.generate_content([multimodal_prompt, image])
+            response = self.bot.multimodal_generate([multimodal_prompt, image])
             raw = (getattr(response, 'text', '') or '').strip()
             cleaned = self.bot._finalize_output(raw, multimodal_prompt, [multimodal_prompt])
             if not cleaned:
@@ -445,7 +482,7 @@ Provide comprehensive analysis covering:
 - Quality considerations and recommendations
 - Suggested test approach for the visible elements"""
 
-            response = self.bot.model.generate_content([image_prompt, image])
+            response = self.bot.safe_generate([image_prompt, image])
             body = getattr(response, 'text', '') or ''
             return (
                 "📸 Image-Only Analysis\n\n"
@@ -478,7 +515,7 @@ Return ONLY structured data in this exact format:
 
 Focus on concrete, testable visual elements."""
 
-            response = self.bot.model.generate_content([visual_prompt, image])
+            response = self.bot.multimodal_generate([visual_prompt, image])
             try:
                 import json
                 return json.loads(getattr(response, 'text', '') or '{}')

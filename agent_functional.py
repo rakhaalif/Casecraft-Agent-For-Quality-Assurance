@@ -89,7 +89,7 @@ ADDITIONAL GWT RULES:
 - Exactly one Given, one When, and one Then per test case, in that order. Use And for any additional preconditions/actions/outcomes.
 - Each step line must start with exactly one keyword: Given/When/Then/And (no chained keywords, e.g., "When Given ...").
 - Never place Given or When after Then; start a new numbered test case instead.
-- Split different intents or states (e.g., empty vs large dataset) into separate numbered cases or use a Scenario Outline with Examples.
+- Split different intents or states (e.g., empy vs large dataset) into separate numbered cases or use a Scenario Outline with Examples.
 - Every test case must end with a Then step.
 
 EXAMPLE SKELETON:
@@ -107,8 +107,8 @@ OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else 
 
             # Few-shot injection from external systems removed per decommissioning
 
-            # Call Gemini via host bot's model
-            response = self.bot.model.generate_content(prompt)
+            # Call Gemini via 2.0-safe generator
+            response = self.bot.safe_generate(prompt)
             raw = (getattr(response, 'text', '') or '').strip()
             # Use host bot utilities to finalize and enforce
             result = self.bot._finalize_output(raw, prompt, [prompt])
@@ -192,7 +192,7 @@ CONTENT RULES:
 
             # Compose content parts: prompt + images
             parts = [prompt] + (images or [])
-            response = self.bot.model.generate_content(parts)
+            response = self.bot.multimodal_generate(parts)
             raw = (getattr(response, 'text', '') or '').strip()
             cleaned = self.bot._finalize_output(raw, prompt, [prompt])
             cleaned = self._enforce_bdd_and_type(cleaned, max_count=user_limit)
@@ -216,7 +216,7 @@ CONTENT RULES:
 User Question: {question}
 
 Provide comprehensive answer with practical examples and actionable advice. Focus on QA best practices and real-world application."""
-            response = self.bot.model.generate_content(full_prompt)
+            response = self.bot.safe_generate(full_prompt)
             return getattr(response, 'text', '')
         except Exception as e:
             return f"Error processing query: {e}"
@@ -234,7 +234,7 @@ Provide comprehensive answer with practical examples and actionable advice. Focu
                 "Keep BDD format with numbering (001., 002., ...). Remove asterisks / markdown. "
                 "Respond only with cleaned test cases. Current draft follows below:\n\n" + (draft_text or "")
             )
-            response = self.bot.model.generate_content([prompt])
+            response = self.bot.safe_generate([prompt])
             return getattr(response, 'text', '') or draft_text
         except Exception:
             return draft_text
@@ -257,7 +257,7 @@ Return JSON with fields:
 }}
 
 Evaluate if the request is clear and actionable."""
-            response = self.bot.model.generate_content(validation_prompt)
+            response = self.bot.safe_generate(validation_prompt)
             try:
                 import json
                 return json.loads(getattr(response, 'text', '') or '{}')
@@ -302,7 +302,7 @@ IMPORTANT:
 - Maintain the original numbering sequence
 
 Return the COMPLETE set of test cases with only the requested modifications applied."""
-            response = self.bot.model.generate_content(modification_prompt)
+            response = self.bot.safe_generate(modification_prompt)
             body = getattr(response, 'text', '') or ''
             return f"""🔧 Test Case Modification Complete
 
@@ -346,7 +346,7 @@ Extract and return ONLY structured data in this exact format:
 }}
 
 Be specific and extract concrete testable elements."""
-            response = self.bot.model.generate_content(analysis_prompt)
+            response = self.bot.safe_generate(analysis_prompt)
             try:
                 import json
                 return json.loads(getattr(response, 'text', '') or '{}')
@@ -410,7 +410,7 @@ Order: Data validation (2) → UI interaction (2) → Error handling (2)
 CONTENT_HASH: {content_hash}"""
             if (test_type or '').lower() == 'visual':
                 generation_prompt += "\n\n" + self._get_visual_only_guidelines()
-            response = self.bot.model.generate_content(
+            response = self.bot.safe_generate(
                 generation_prompt,
                 generation_config={
                     "temperature": 0.0,
@@ -483,8 +483,12 @@ CONTENT_HASH: {content_hash}"""
                 if cur:
                     cases.append(cur)
                 num = m.group(1)
-                title = m.group(2).strip().rstrip('.')
-                cur = { 'num': num, 'title': title, 'steps': [] }
+                title_raw = m.group(2).strip().rstrip('.')
+                import re as _re0
+                is_bdd_title = _re0.match(r"^(Given|When|Then|And)\b", title_raw, flags=_re0.I) is not None
+                cur = { 'num': num, 'title': title_raw, 'steps': [] }
+                if is_bdd_title:
+                    cur['title_as_step'] = title_raw
             else:
                 if cur is None:
                     continue
@@ -516,6 +520,19 @@ CONTENT_HASH: {content_hash}"""
                 return f"{chosen} {rest.strip()}".strip()
 
             steps = [sanitize(s) for s in steps]
+            # Preserve any BDD-like title as a step
+            tstep = case.get('title_as_step')
+            if tstep:
+                tstep_s = sanitize(tstep)
+                if not any(_re.match(rf"^{_re.escape(tstep_s)}$", x, flags=_re.I) for x in steps):
+                    if tstep_s.lower().startswith('given '):
+                        steps.insert(0, tstep_s)
+                    elif tstep_s.lower().startswith('when '):
+                        gi = next((i for i,x in enumerate(steps) if x.lower().startswith('given ')), None)
+                        insert_at = gi+1 if isinstance(gi,int) else 0
+                        steps.insert(insert_at, tstep_s)
+                    else:
+                        steps.append(tstep_s)
             has_given = any(s.startswith('Given ') for s in steps)
             has_when = any(s.startswith('When ') for s in steps)
             has_then = any(s.startswith('Then ') for s in steps)
@@ -526,6 +543,20 @@ CONTENT_HASH: {content_hash}"""
             if not has_then:
                 steps.append('Then the expected outcome is produced without errors')
             case['steps'] = steps
+            # Normalize title if it starts with BDD keyword
+            def derive_title(ttl: str, stps: list[str]) -> str:
+                if _re.match(r"^(Given|When|Then|And)\b", ttl, flags=_re.I):
+                    for s in stps:
+                        if s.lower().startswith('then '):
+                            return ('Verify ' + s[5:].strip()).rstrip('.')
+                    for s in stps:
+                        if s.lower().startswith('when '):
+                            return s[5:].strip().rstrip('.')
+                    for s in stps:
+                        if s.lower().startswith('given '):
+                            return s[6:].strip().rstrip('.')
+                return ttl
+            case['title'] = derive_title(title, steps)
             return case
 
         cases = [ensure_gwt(c) for c in cases]
