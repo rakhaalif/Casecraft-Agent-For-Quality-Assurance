@@ -1688,7 +1688,6 @@ Please generate {target} test cases based on this input, ensuring they follow ou
                                 # Fallback: use index
                                 tc_number = f"{tc_index + 1:03d}"
                             
-                            # Keep button concise to avoid overflow; list above shows full titles
                             button_text = f"📝 TC-{tc_number}"
                             callback_data = f"select_tc_{tc_number}_{user_id}"
                             

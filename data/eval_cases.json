@@ -1,0 +1,656 @@
+[
+  {
+    "case_id": "TC-001",
+    "product": "NetMonk",
+    "scenario": "Device Status Page",
+    "prompt": "Halaman: Device Status Page; Tujuan: Menampilkan status perangkat dari seluruh node. Komponen utama: kartu ringkasan Total Up/Down/Undetected (ikon panah hijau, panah merah, tanda tanya); dropdown 'Devices based on : All Tagging'; field pencarian Device Name dan checkbox filter status (Up, Down, Undetected); tombol Export to CSV; tabel kolom Device Name, Node Name, IP Management, Status (dot warna), Uptime, Tagging (badge), Action (ikon mata); pagination 'Showing rows 1 to 5 of 100' dengan kontrol First, <, angka, >, Last. Kriteria: ikon sesuai status, badge tagging rounded, tombol ekspor aktif.",
+    "requirement": "Halaman menampilkan judul \"Device Status\" di kiri atas, tiga kartu ringkasan Total Up, Total Down, Total Undetected lengkap ikon panah/pertanyaan dan angka, dropdown \"Devices based on\" default \"All Tagging\", kolom pencarian placeholder \"Type to search\", tombol \"Export to CSV\", tabel dengan kolom Device Name, Node Name, IP Management, Status (dot warna + ikon peringatan), Uptime, Tagging (badge rounded), Action (ikon mata), header sortable, serta pagination First, <, angka, >, Last.",
+    "generated_testcases": [
+      {
+        "id": "001",
+        "title": "Verify the \"Device Status\" title is displayed in the top-left corner",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Device Status\" title is displayed in the top-left corner.",
+        "generated_at": "2025-10-29T09:00:00Z"
+      },
+      {
+        "id": "002",
+        "title": "Verify three summary cards with the labels \"Total Up\", \"Total Down\", and \"Total Undetected\" are displayed at the top",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen three summary cards with the labels \"Total Up\", \"Total Down\", and \"Total Undetected\" are displayed at the top.",
+        "generated_at": "2025-10-29T09:00:05Z"
+      },
+      {
+        "id": "003",
+        "title": "Verify the \"Total Up\" summary card displays an upward arrow icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Up\" summary card displays an upward arrow icon.",
+        "generated_at": "2025-10-29T09:00:10Z"
+      },
+      {
+        "id": "004",
+        "title": "Verify the \"Total Down\" summary card displays a downward arrow icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Down\" summary card displays a downward arrow icon.",
+        "generated_at": "2025-10-29T09:00:15Z"
+      },
+      {
+        "id": "005",
+        "title": "Verify the \"Total Undetected\" summary card displays a question mark icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Undetected\" summary card displays a question mark icon.",
+        "generated_at": "2025-10-29T09:00:20Z"
+      },
+      {
+        "id": "006",
+        "title": "Verify the \"Total Up\" summary card displays the number \"3\"",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Up\" summary card displays the number \"3\".",
+        "generated_at": "2025-10-29T09:00:25Z"
+      },
+      {
+        "id": "007",
+        "title": "Verify the \"Total Down\" summary card displays the number \"0\"",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Down\" summary card displays the number \"0\".",
+        "generated_at": "2025-10-29T09:00:30Z"
+      },
+      {
+        "id": "008",
+        "title": "Verify the \"Total Undetected\" summary card displays the number \"47\"",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Total Undetected\" summary card displays the number \"47\".",
+        "generated_at": "2025-10-29T09:00:35Z"
+      },
+      {
+        "id": "009",
+        "title": "Verify a dropdown labeled \"All Tagging\" is displayed on the top right",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen a dropdown labeled \"All Tagging\" is displayed on the top right.",
+        "generated_at": "2025-10-29T09:00:40Z"
+      },
+      {
+        "id": "010",
+        "title": "Verify a search field with the placeholder \"Type to search\" and a magnifying glass icon is present",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen a search field with the placeholder \"Type to search\" and a magnifying glass icon is present.",
+        "generated_at": "2025-10-29T09:00:45Z"
+      },
+      {
+        "id": "011",
+        "title": "Verify a button labeled \"Export to CSV\" is displayed",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen a button labeled \"Export to CSV\" is displayed.",
+        "generated_at": "2025-10-29T09:00:50Z"
+      },
+      {
+        "id": "012",
+        "title": "Verify a table with the column headers \"Device Name\", \"Node Name\", \"IP Management\", \"Status\", \"Uptime\", \"Tagging\", and \"Action\" is displayed",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen a table with the column headers \"Device Name\", \"Node Name\", \"IP Management\", \"Status\", \"Uptime\", \"Tagging\", and \"Action\" is displayed.",
+        "generated_at": "2025-10-29T09:00:55Z"
+      },
+      {
+        "id": "013",
+        "title": "Verify the \"Device Name\" column header has a sort icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Device Name\" column header has a sort icon.",
+        "generated_at": "2025-10-29T09:01:00Z"
+      },
+      {
+        "id": "014",
+        "title": "Verify the \"Node Name\" column header has a sort icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Node Name\" column header has a sort icon.",
+        "generated_at": "2025-10-29T09:01:05Z"
+      },
+      {
+        "id": "015",
+        "title": "Verify the \"IP Management\" column header has a sort icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"IP Management\" column header has a sort icon.",
+        "generated_at": "2025-10-29T09:01:10Z"
+      },
+      {
+        "id": "016",
+        "title": "Verify the \"Status\" column displays a colored dot and a warning icon for each device",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Status\" column displays a colored dot and a warning icon for each device.",
+        "generated_at": "2025-10-29T09:01:15Z"
+      },
+      {
+        "id": "017",
+        "title": "Verify the \"Tagging\" column displays a badge with rounded corners",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Tagging\" column displays a badge with rounded corners.",
+        "generated_at": "2025-10-29T09:01:20Z"
+      },
+      {
+        "id": "018",
+        "title": "Verify the \"Action\" column displays an eye icon",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the \"Action\" column displays an eye icon.",
+        "generated_at": "2025-10-29T09:01:25Z"
+      },
+      {
+        "id": "019",
+        "title": "Verify pagination controls, including \"First\", \"<\", numbered page links, \"\u003e\", and \"Last\", are displayed at the bottom",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen pagination controls, including \"First\", \"<\", numbered page links, \"\u003e\", and \"Last\", are displayed at the bottom.",
+        "generated_at": "2025-10-29T09:01:30Z"
+      },
+      {
+        "id": "020",
+        "title": "Verify the expected result is displayed",
+        "body": "Given the Device Status page is displayed\nWhen the page is loaded\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:01:35Z"
+      }
+    ],
+    "metrics": {
+      "duration_seconds": 3.6
+    }
+  },
+  {
+    "case_id": "TC-002",
+    "product": "NetMonk",
+    "scenario": "QoS Status Page",
+    "prompt": "Halaman: QoS Status Page; Tujuan: Memantau kualitas layanan per perangkat. Komponen: kartu ringkasan QoS (jika ada), dropdown filter wilayah, tabel peringkat QoS dengan kolom perangkat, skor, kategori, indikator tren (ikon panah naik/turun), checkbox filter status, dan tombol ekspor bila tersedia.",
+    "requirement": "Halaman menampilkan judul \"Quality of Service (QoS) Status\", kartu metrik rata-rata latency 12.34 ms, jitter 0.07 ms, packet loss 0.0% dengan ikon tematik, dropdown \"Devices based on\" default \"All Tagging\", tombol \"Export to CSV\", tabel dengan kolom Device Name, IP Management, Latency, Jitter, Packet Loss, Tagging, Action lengkap ikon sort, field pencarian placeholder \"Type to search\", pagination First, <, 1, 2, >, Last, serta baris perangkat berisi data dan tombol aksi berbentuk lingkaran.",
+    "generated_testcases": [
+      {
+        "id": "001",
+        "title": "QoS Status Page Title",
+        "body": "Given the QoS Status page is displayed\nWhen the page title is observed\nThen the text \"Quality of Service (QoS) Status\" is displayed at the top of the page.",
+        "generated_at": "2025-10-29T09:05:00Z"
+      },
+      {
+        "id": "002",
+        "title": "Average Latency Card",
+        "body": "Given the QoS Status page is displayed\nWhen the average latency card is observed\nThen the card displays \"12.34 ms\" as the average latency value.",
+        "generated_at": "2025-10-29T09:05:05Z"
+      },
+      {
+        "id": "003",
+        "title": "Average Jitter Card",
+        "body": "Given the QoS Status page is displayed\nWhen the average jitter card is observed\nThen the card displays \"0.07 ms\" as the average jitter value.",
+        "generated_at": "2025-10-29T09:05:10Z"
+      },
+      {
+        "id": "004",
+        "title": "Average Packet Loss Card",
+        "body": "Given the QoS Status page is displayed\nWhen the average packet loss card is observed\nThen the card displays \"0.0%\" as the average packet loss value.",
+        "generated_at": "2025-10-29T09:05:15Z"
+      },
+      {
+        "id": "005",
+        "title": "Devices Based On Dropdown",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Devices based on\" dropdown is observed\nThen the dropdown is visible, and the default selection is \"All Tagging\".",
+        "generated_at": "2025-10-29T09:05:20Z"
+      },
+      {
+        "id": "006",
+        "title": "Export to CSV Button",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Export to CSV\" button is observed\nThen the button is displayed with the label \"Export to CSV\".",
+        "generated_at": "2025-10-29T09:05:25Z"
+      },
+      {
+        "id": "007",
+        "title": "Device Name Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Device Name\" column header is observed\nThen the column header displays the text \"Device Name\"\nAnd a sort icon is present next to the header text.",
+        "generated_at": "2025-10-29T09:05:30Z"
+      },
+      {
+        "id": "008",
+        "title": "IP Management Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"IP Management\" column header is observed\nThen the column header displays the text \"IP Management\"\nAnd a sort icon is present next to the header text.",
+        "generated_at": "2025-10-29T09:05:35Z"
+      },
+      {
+        "id": "009",
+        "title": "Latency Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Latency\" column header is observed\nThen the column header displays the text \"Latency\"\nAnd a sort icon is present next to the header text.",
+        "generated_at": "2025-10-29T09:05:40Z"
+      },
+      {
+        "id": "010",
+        "title": "Jitter Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Jitter\" column header is observed\nThen the column header displays the text \"Jitter\"\nAnd a sort icon is present next to the header text.",
+        "generated_at": "2025-10-29T09:05:45Z"
+      },
+      {
+        "id": "011",
+        "title": "Packet Loss Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Packet Loss\" column header is observed\nThen the column header displays the text \"Packet Loss\"\nAnd a sort icon is present next to the header text.",
+        "generated_at": "2025-10-29T09:05:50Z"
+      },
+      {
+        "id": "012",
+        "title": "Tagging Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Tagging\" column header is observed\nThen the column header displays the text \"Tagging\".",
+        "generated_at": "2025-10-29T09:05:55Z"
+      },
+      {
+        "id": "013",
+        "title": "Action Column Header",
+        "body": "Given the QoS Status page is displayed\nWhen the \"Action\" column header is observed\nThen the column header displays the text \"Action\".",
+        "generated_at": "2025-10-29T09:06:00Z"
+      },
+      {
+        "id": "014",
+        "title": "Search Input Field",
+        "body": "Given the QoS Status page is displayed\nWhen the search input field is observed\nThen the search input field has the placeholder text \"Type to search\"\nAnd a search icon is displayed inside the input field.",
+        "generated_at": "2025-10-29T09:06:05Z"
+      },
+      {
+        "id": "015",
+        "title": "Pagination Controls",
+        "body": "Given the QoS Status page is displayed\nWhen the pagination controls are observed\nAnd the navigation controls \"First\", \"<\", \"1\", \"2\", \"\u003e\", and \"Last\" are present\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:06:10Z"
+      },
+      {
+        "id": "016",
+        "title": "Device Row Appearance",
+        "body": "Given the QoS Status page is displayed\nWhen a device row is observed\nThen the row displays the device name, IP Management, Latency, Jitter, Packet Loss, and an Action button.",
+        "generated_at": "2025-10-29T09:06:15Z"
+      },
+      {
+        "id": "017",
+        "title": "Device Row Action Button",
+        "body": "Given a device row is displayed\nWhen the action button in the device row is observed\nThen the action button is a circle with a specific visual style.",
+        "generated_at": "2025-10-29T09:06:20Z"
+      },
+      {
+        "id": "018",
+        "title": "Average Latency Card Icon",
+        "body": "Given the QoS Status page is displayed\nWhen the average latency card is observed\nThen an icon is displayed next to the \"12.34 ms\" value, related to time/latency (clock).",
+        "generated_at": "2025-10-29T09:06:25Z"
+      },
+      {
+        "id": "019",
+        "title": "Average Jitter Card Icon",
+        "body": "Given the QoS Status page is displayed\nWhen the average jitter card is observed\nThen an icon is displayed next to the \"0.07 ms\" value, related to network performance.",
+        "generated_at": "2025-10-29T09:06:30Z"
+      },
+      {
+        "id": "020",
+        "title": "Average Packet Loss Card Icon",
+        "body": "Given the QoS Status page is displayed\nWhen the average packet loss card is observed\nThen an icon is displayed next to the \"0.0%\" value, related to network packet loss.",
+        "generated_at": "2025-10-29T09:06:35Z"
+      }
+    ],
+    "metrics": {
+      "duration_seconds": 3.2
+    }
+  },
+  {
+    "case_id": "TC-003",
+    "product": "NetMonk",
+    "scenario": "Link Utilization Page",
+    "prompt": "Halaman: Link Utilization Page; Fitur: menampilkan persentase utilisasi link dan grafik historis per hari. Komponen: dropdown period, grafik garis utilisasi per link, tabel dengan kolom nama link, node, utilisasi %, status warna, opsi filter, dan pagination.",
+    "requirement": "Halaman menampilkan judul \"Link Utilization\", indikator status Normal, Warning, Critical dengan ikon hijau/kuning/merah, tab \"Running\" dan \"Paused\" dengan jumlah seperti \"Running (108)\" atau \"Paused (46128)\", field pencarian \"Type to search\" beserta ikon kaca pembesar, tabel dengan kolom Node, Inventory Name, IP Management, Interface, Utilization, Status (dot warna + label), Action (ikon elipsis), tombol \"Export to CSV\", serta checkbox filter untuk Normal, Warning, Critical.",
+    "generated_testcases": [
+      {
+        "id": "001",
+        "title": "Link Utilization Page Title",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the title \"Link Utilization\" is visible at the top.",
+        "generated_at": "2025-10-29T09:10:00Z"
+      },
+      {
+        "id": "002",
+        "title": "Status Indicator Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the status indicators for \"Normal\", \"Warning\", and \"Critical\" are visible.",
+        "generated_at": "2025-10-29T09:10:05Z"
+      },
+      {
+        "id": "003",
+        "title": "Normal Status Indicator",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Normal\" status indicator shows a green checkmark icon and the text \"Normal\".",
+        "generated_at": "2025-10-29T09:10:10Z"
+      },
+      {
+        "id": "004",
+        "title": "Warning Status Indicator",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Warning\" status indicator shows a yellow exclamation mark icon and the text \"Warning\".",
+        "generated_at": "2025-10-29T09:10:15Z"
+      },
+      {
+        "id": "005",
+        "title": "Critical Status Indicator",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Critical\" status indicator shows a red \"X\" icon and the text \"Critical\".",
+        "generated_at": "2025-10-29T09:10:20Z"
+      },
+      {
+        "id": "006",
+        "title": "Running and Paused Tabs",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Running\" and \"Paused\" tabs are displayed, with \"Running\" selected by default.",
+        "generated_at": "2025-10-29T09:10:25Z"
+      },
+      {
+        "id": "007",
+        "title": "Running Tab Counter",
+        "body": "Given the Link Utilization page is displayed\nWhen the \"Running\" tab is selected\nThen the \"Running\" tab displays the number of running links, such as \"Running (108)\".",
+        "generated_at": "2025-10-29T09:10:30Z"
+      },
+      {
+        "id": "008",
+        "title": "Paused Tab Counter",
+        "body": "Given the Link Utilization page is displayed\nWhen the \"Paused\" tab is selected\nThen the \"Paused\" tab displays the number of paused links, such as \"Paused (46128)\".",
+        "generated_at": "2025-10-29T09:10:35Z"
+      },
+      {
+        "id": "009",
+        "title": "Search Input Field",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen a search input field labeled \"Type to search\" is visible.",
+        "generated_at": "2025-10-29T09:10:40Z"
+      },
+      {
+        "id": "010",
+        "title": "Search Icon",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen a magnifying glass icon is visible within or adjacent to the search input field.",
+        "generated_at": "2025-10-29T09:10:45Z"
+      },
+      {
+        "id": "011",
+        "title": "Table Header Labels",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the table headers \"Node\", \"Inventory Name\", \"IP Management\", \"Interface\", \"Utilization\", \"Status\", and \"Action\" are visible.",
+        "generated_at": "2025-10-29T09:10:50Z"
+      },
+      {
+        "id": "012",
+        "title": "Node Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Node\" column displays the node name, like \"CCR-EOS\".",
+        "generated_at": "2025-10-29T09:10:55Z"
+      },
+      {
+        "id": "013",
+        "title": "Inventory Name Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Inventory Name\" column displays the inventory name, like \"EOS BONSIR\".",
+        "generated_at": "2025-10-29T09:11:00Z"
+      },
+      {
+        "id": "014",
+        "title": "IP Management Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"IP Management\" column displays the IP address, like \"36.88.103.67\".",
+        "generated_at": "2025-10-29T09:11:05Z"
+      },
+      {
+        "id": "015",
+        "title": "Interface Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Interface\" column displays the interface name, like \"ether1-PNP\".",
+        "generated_at": "2025-10-29T09:11:10Z"
+      },
+      {
+        "id": "016",
+        "title": "Utilization Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Utilization\" column displays the utilization percentage, like \"0.0%\".",
+        "generated_at": "2025-10-29T09:11:15Z"
+      },
+      {
+        "id": "017",
+        "title": "Status Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Status\" column displays the status, like \"Normal\", with a corresponding status color dot.",
+        "generated_at": "2025-10-29T09:11:20Z"
+      },
+      {
+        "id": "018",
+        "title": "Action Column Display",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen the \"Action\" column displays an ellipsis icon for each row.",
+        "generated_at": "2025-10-29T09:11:25Z"
+      },
+      {
+        "id": "019",
+        "title": "Export to CSV Button",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen an \"Export to CSV\" button is visible.",
+        "generated_at": "2025-10-29T09:11:30Z"
+      },
+      {
+        "id": "020",
+        "title": "Filter Checkboxes",
+        "body": "Given the Link Utilization page is displayed\nWhen the page is loaded\nThen checkboxes for filtering by \"Normal\", \"Warning\", and \"Critical\" are visible.",
+        "generated_at": "2025-10-29T09:11:35Z"
+      }
+    ],
+    "metrics": {
+      "duration_seconds": 3.5
+    }
+  },
+  {
+    "case_id": "TC-004",
+    "product": "NetMonk",
+    "scenario": "Starred Link Page",
+    "prompt": "Halaman: Starred Link Page; Tujuan: menampilkan link favorit dengan status warna. Komponen: tabel nama link, lokasi, status (dot warna), badge region, filter status/region, ikon action detail, pagination.",
+    "requirement": "Halaman menampilkan judul \"Starred Link\", ringkasan \"Total In (Kbps)\" 5.7 dengan ikon inbound dan \"Total Out (Kbps)\" 9.9 dengan ikon outbound, search bar \"Type to search\" di samping Device Name, tabel dengan kolom Device Name (sortable), IP Management, Interface (sortable), Descriptions (sortable), Custom Bandwidth, Traffic (In & Out) dengan ikon panah masuk/keluar, Action (ikon elipsis), baris contoh seperti EOS BONSR, Barracuda, Marvin-Lokal, serta pagination First, <, 1, >, Last.",
+    "generated_testcases": [
+      {
+        "id": "001",
+        "title": "Starred Link Page Title",
+        "body": "Given the Starred Link page is displayed\nWhen the page title is observed\nThen the text \"Starred Link\" is visible at the top-left of the page.",
+        "generated_at": "2025-10-29T09:15:00Z"
+      },
+      {
+        "id": "002",
+        "title": "Total In (Kbps) Display",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Total In (Kbps)\" information is observed\nThen the value \"5.7\" is displayed next to an inbound arrow icon.",
+        "generated_at": "2025-10-29T09:15:05Z"
+      },
+      {
+        "id": "003",
+        "title": "Total Out (Kbps) Display",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Total Out (Kbps)\" information is observed\nThen the value \"9.9\" is displayed next to an outbound arrow icon.",
+        "generated_at": "2025-10-29T09:15:10Z"
+      },
+      {
+        "id": "004",
+        "title": "Device Name Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Device Name\" column header is observed\nThen the text \"Device Name\" is displayed and is sortable.",
+        "generated_at": "2025-10-29T09:15:15Z"
+      },
+      {
+        "id": "005",
+        "title": "IP Management Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"IP Management\" column header is observed\nThen the text \"IP Management\" is displayed.",
+        "generated_at": "2025-10-29T09:15:20Z"
+      },
+      {
+        "id": "006",
+        "title": "Interface Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Interface\" column header is observed\nThen the text \"Interface\" is displayed and is sortable.",
+        "generated_at": "2025-10-29T09:15:25Z"
+      },
+      {
+        "id": "007",
+        "title": "Descriptions Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Descriptions\" column header is observed\nThen the text \"Descriptions\" is displayed and is sortable.",
+        "generated_at": "2025-10-29T09:15:30Z"
+      },
+      {
+        "id": "008",
+        "title": "Custom Bandwidth Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Custom Bandwidth\" column header is observed\nThen the text \"Custom Bandwidth\" is displayed.",
+        "generated_at": "2025-10-29T09:15:35Z"
+      },
+      {
+        "id": "009",
+        "title": "Traffic (In & Out) Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Traffic (In & Out)\" column header is observed\nThen the text \"Traffic (In & Out)\" is displayed.",
+        "generated_at": "2025-10-29T09:15:40Z"
+      },
+      {
+        "id": "010",
+        "title": "Action Column Header",
+        "body": "Given the Starred Link page is displayed\nWhen the \"Action\" column header is observed\nThen the text \"Action\" is displayed.",
+        "generated_at": "2025-10-29T09:15:45Z"
+      },
+      {
+        "id": "011",
+        "title": "Search Bar Visibility",
+        "body": "Given the Starred Link page is displayed\nWhen the search bar is observed\nThen the search bar with the placeholder \"Type to search\" is visible next to \"Device Name\".",
+        "generated_at": "2025-10-29T09:15:50Z"
+      },
+      {
+        "id": "012",
+        "title": "Table Row EOS BONSR",
+        "body": "Given the Starred Link page is displayed\nWhen the table row for \"EOS BONSR\" is observed\nThen the row displays the expected details for the EOS BONSR link.",
+        "generated_at": "2025-10-29T09:15:55Z"
+      },
+      {
+        "id": "013",
+        "title": "Table Row Barracuda",
+        "body": "Given the Starred Link page is displayed\nWhen the table row for \"Barracuda\" is observed\nThen the row displays the expected details for the Barracuda link.",
+        "generated_at": "2025-10-29T09:16:00Z"
+      },
+      {
+        "id": "014",
+        "title": "Table Row Marvin-Lokal",
+        "body": "Given the Starred Link page is displayed\nWhen the table row for \"Marvin-Lokal\" is observed\nThen the row displays the expected details for the Marvin-Lokal link.",
+        "generated_at": "2025-10-29T09:16:05Z"
+      },
+      {
+        "id": "015",
+        "title": "Pagination Controls",
+        "body": "Given the Starred Link page is displayed\nWhen the pagination controls are observed\nThen the controls \"First\", \"<\", \"1\", \"\u003e\", and \"Last\" are visible.",
+        "generated_at": "2025-10-29T09:16:10Z"
+      },
+      {
+        "id": "016",
+        "title": "Pagination Display",
+        "body": "Given the Starred Link page is displayed\nWhen the pagination display is observed\nThen the display shows the current range of rows being viewed.",
+        "generated_at": "2025-10-29T09:16:15Z"
+      },
+      {
+        "id": "017",
+        "title": "Action Icon Detail",
+        "body": "Given the Starred Link page is displayed\nWhen a table row is reviewed\nThen each row displays a vertical ellipsis icon for the detail action.",
+        "generated_at": "2025-10-29T09:16:20Z"
+      },
+      {
+        "id": "018",
+        "title": "Inbound Traffic Icon",
+        "body": "Given the Starred Link page is displayed\nWhen the inbound traffic value is observed\nThen an inbound arrow icon is shown next to the traffic in value.",
+        "generated_at": "2025-10-29T09:16:25Z"
+      },
+      {
+        "id": "019",
+        "title": "Outbound Traffic Icon",
+        "body": "Given the Starred Link page is displayed\nWhen the outbound traffic value is observed\nThen an outbound arrow icon is shown next to the traffic out value.",
+        "generated_at": "2025-10-29T09:16:30Z"
+      }
+    ],
+    "metrics": {
+      "duration_seconds": 3.8
+    }
+  },
+  {
+    "case_id": "TC-005",
+    "product": "NetMonk",
+    "scenario": "CPU Usage Page",
+    "prompt": "Halaman: CPU Usage Page; Tujuan: memonitor penggunaan CPU perangkat. Komponen: kartu ringkasan CPU tertinggi/terendah (jika ada), grafik tren CPU, tabel perangkat dengan persentase CPU, status warna, filter interval waktu, tombol ekspor, serta aksi lihat detail.",
+    "requirement": "Halaman menampilkan judul \"CPU Usage\" di kiri atas, kartu Average CPU Usage menampilkan nilai 2.00% dengan status \"Normal\" berikon titik hijau, ringkasan jumlah perangkat \"2 Normal\", \"0 Warning\" (ikon tanda seru kuning), \"0 Critical\" (ikon X merah), serta penyajian data yang tervalidasi visual saat halaman dimuat.",
+    "generated_testcases": [
+      {
+        "id": "001",
+        "title": "001. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:00Z"
+      },
+      {
+        "id": "002",
+        "title": "002. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:05Z"
+      },
+      {
+        "id": "003",
+        "title": "003. Verify the title \"CPU Usage\" is visible at the top left of the page",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then the title \"CPU Usage\" is visible at the top left of the page' is reviewed visually\nThen the title \"CPU Usage\" is visible at the top left of the page.",
+        "generated_at": "2025-10-29T09:20:10Z"
+      },
+      {
+        "id": "004",
+        "title": "004. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:15Z"
+      },
+      {
+        "id": "005",
+        "title": "005. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:20Z"
+      },
+      {
+        "id": "006",
+        "title": "006. Verify a card displaying the average CPU usage as \"2.00%\" is visible",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then a card displaying the average CPU usage as \"2.00%\" is visible' is reviewed visually\nThen a card displaying the average CPU usage as \"2.00%\" is visible.",
+        "generated_at": "2025-10-29T09:20:25Z"
+      },
+      {
+        "id": "007",
+        "title": "007. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:30Z"
+      },
+      {
+        "id": "008",
+        "title": "008. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:35Z"
+      },
+      {
+        "id": "009",
+        "title": "009. Verify a card displaying \"Normal\" status with a green dot is visible next to the CPU usage",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then a card displaying \"Normal\" status with a green dot is visible next to the CPU usage' is reviewed visually\nThen a card displaying \"Normal\" status with a green dot is visible next to the CPU usage.",
+        "generated_at": "2025-10-29T09:20:40Z"
+      },
+      {
+        "id": "010",
+        "title": "010. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:45Z"
+      },
+      {
+        "id": "011",
+        "title": "011. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:20:50Z"
+      },
+      {
+        "id": "012",
+        "title": "012. Verify a card displaying \"2 Normal\" is visible",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then a card displaying \"2 Normal\" is visible' is reviewed visually\nThen a card displaying \"2 Normal\" is visible.",
+        "generated_at": "2025-10-29T09:20:55Z"
+      },
+      {
+        "id": "013",
+        "title": "013. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:00Z"
+      },
+      {
+        "id": "014",
+        "title": "014. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:05Z"
+      },
+      {
+        "id": "015",
+        "title": "015. Verify a card displaying \"0 Warning\" with a yellow exclamation mark icon is visible",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then a card displaying \"0 Warning\" with a yellow exclamation mark icon is visible' is reviewed visually\nThen a card displaying \"0 Warning\" with a yellow exclamation mark icon is visible.",
+        "generated_at": "2025-10-29T09:21:10Z"
+      },
+      {
+        "id": "016",
+        "title": "016. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:15Z"
+      },
+      {
+        "id": "017",
+        "title": "017. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:20Z"
+      },
+      {
+        "id": "018",
+        "title": "018. Verify a card displaying \"0 Critical\" with a red X icon is visible",
+        "body": "Given the page or feature under test is available and visible\nWhen the scenario 'Then a card displaying \"0 Critical\" with a red X icon is visible' is reviewed visually\nThen a card displaying \"0 Critical\" with a red X icon is visible.",
+        "generated_at": "2025-10-29T09:21:25Z"
+      },
+      {
+        "id": "019",
+        "title": "019. Verify the expected result is displayed",
+        "body": "Given the CPU Usage page is displayed\nWhen the scenario 'Given the CPU Usage page is displayed' is reviewed visually\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:30Z"
+      },
+      {
+        "id": "020",
+        "title": "020. Verify the expected result is displayed",
+        "body": "Given the page or feature under test is available and visible\nWhen the page loads\nThen the expected result is displayed.",
+        "generated_at": "2025-10-29T09:21:35Z"
+      }
+    ],
+    "metrics": {
+      "duration_seconds": 3.9
+    }
+  }
+]

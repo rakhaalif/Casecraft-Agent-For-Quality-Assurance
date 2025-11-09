@@ -10,11 +10,6 @@
  .eggs/
  .dist-info/
  
- # Virtual environments
- .venv/
- venv/
- ENV/
- 
  # Packaging / build
  build/
  dist/
