@@ -1,4 +1,4 @@
-# Casecraft QA Chatbot
+# Casecraft Agentbot for Quality Assurance
 
 Assistant Telegram berbasis RAG + Gemini untuk menghasilkan test case fungsional dan visual berkualitas tinggi dari prompt natural language maupun gambar UI. Repo ini juga menyertakan pipeline evaluasi otomatis (cosine, BDD, durasi, dan LLM scoring) beserta template dataset.
 
