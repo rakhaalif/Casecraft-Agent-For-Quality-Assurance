@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import logging
+from textwrap import dedent
 
 
 logger = logging.getLogger(__name__)
@@ -44,17 +45,49 @@ class VisualAgent:
         return ''
 
     def _visual_only_guidelines(self) -> str:
-        return (
-            "STRICT VISUAL-ONLY GUARDRAILS:\n"
-            "- SCOPE: UI/UX appearance only. Validate layout, alignment, spacing, size, color, typography, icons, images, borders, shadows, responsiveness, and accessibility.\n"
-            "- DO NOT include functional flows, data processing, API/backend behavior, authentication, form submission logic, CRUD, DB validation, or calculations.\n"
-            "- STEPS must NOT require clicking buttons to trigger business logic (e.g., create/save/login). Clicks are allowed only to reveal UI states (hover, focus, open modal).\n"
-            "- Focus on what is visually present in the provided sources. Avoid inferring invisible behavior.\n"
-            "- Use concrete visual assertions: exact labels/text, presence/absence of icons, color codes, pixel/spacing consistency, grid alignment, truncation/ellipsis rules, contrast ratio hints, and responsive breakpoints.\n"
-            "- If a requirement implies functionality, restate it as a visual expectation (e.g., button state, disabled style, tooltip visibility).\n"
-            "OUTPUT VALIDATION (append at the end):\n"
-            "- Add a short 'Visual-only self-check' list confirming no functional steps or backend validations are present."
+        return dedent(
+            """
+            - Limit assertions to UI/UX appearance: layout, spacing, color, typography, icons, imagery, responsiveness, accessibility.
+            - Never describe backend/API/business logic, data processing, or CRUD behaviour; convert such intent to a visible UI state.
+            - User actions are allowed only to reveal visual states (hover, focus, open modal) and must not trigger workflow logic.
+            - Be concrete: reference visible labels, icons, states, color codes, alignment, contrast, breakpoints, and error states.
+            """
+        ).strip()
+
+    def _build_generation_prompt(
+        self,
+        requirements: str,
+        user_limit: Optional[int],
+        multimodal: bool,
+    ) -> str:
+        limit_clause = (
+            f"Generate up to {user_limit} test cases." if user_limit else "Generate 15-20 concise test cases."
         )
+        requirement_block = requirements if requirements.strip() else "Use the supplied visuals only."
+        source_text = "Images and text" if multimodal else "Text requirements"
+
+        return dedent(
+            f"""
+            {self._system_prompt()}
+
+            TASK: {limit_clause}
+            SOURCE: {source_text}
+
+            OUTPUT RULES:
+            - English only; remove markdown bullets or asterisks.
+            - Number test cases 001., 002., ... and include one Given, one When, one Then (use And for optional follow-ups).
+            - Keep each step on its own line with the keyword at the beginning.
+            - End every test case with Then and start new scenarios with the next number.
+
+            VISUAL SCOPE:
+            {self._visual_only_guidelines()}
+
+            REQUIREMENTS:
+            {requirement_block}
+
+            Return only the list of test cases.
+            """
+        ).strip()
 
     def _system_prompt(self) -> str:
         base = getattr(self.bot, 'qa_system_prompt', '')
@@ -73,69 +106,7 @@ class VisualAgent:
     async def generate_from_text(self, text: str) -> str:
         try:
             user_limit = self.bot._extract_requested_case_count(text or '')
-            size_clause = (
-                "GENERATE BDD TEST CASES"
-                if not user_limit else f"GENERATE UP TO {user_limit} BDD TEST CASES"
-            )
-
-            prompt = f"""{self._system_prompt()}
-
-TASK: {size_clause} FROM TEXT REQUIREMENTS (ENGLISH ONLY, NO ASTERISKS)
-
-TEXT REQUIREMENTS:
-{text}
-
-TARGET: Generate VISUAL TEST CASES using custom knowledge base standards.
-
-STRICT FORMAT INSTRUCTIONS (APPLY TO EVERY TEST CASE):
-- Each test case MUST include exactly:
-    - Numbered title line (001., 002., ...)
-    - Given (required)
-    - When (required)
-    - Then (required)
-    - And (optional; 0–2 lines)
-- Do NOT skip Given/When/Then. English only. No asterisks (*). Only output test cases.
-- Include positive, negative, and edge cases.
-
-ADDITIONAL GWT RULES:
-- Exactly one Given, one When, and one Then per test case, in that order. Use And for any additional preconditions/actions/outcomes.
-- Each step line must start with exactly one keyword: Given/When/Then/And (no chained keywords, e.g., "When Given ...").
-- Never place Given or When after Then; start a new numbered test case instead.
-- Split different intents/states (e.g., empty vs large dataset) into separate numbered cases or use a Scenario Outline with Examples.
-- Every test case must end with a Then step.
-
-EXAMPLE SKELETON:
-001. Title
-Given ...
-When ...
-Then ...
-And ... (optional)
-
-TYPE-SPECIFIC RULES:
-- VISUAL: Only UI/UX appearance. Do NOT assert actual data result correctness (filtering, search, sort), API/backend behavior, or business logic. Convert such intents into visual assertions (selected filter chip state, active sort icon, focus ring, placeholder, empty-state components, responsive layout, contrast).
-
-OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else f'Generate no more than {user_limit} test cases; fewer is acceptable if content is insufficient.'} that follow project standards.
-"""
-
-            # Few-shot titles from Squash folder cache if available
-            try:
-                folder_samples = getattr(self.bot, 'squash_api_testcases_folder', []) or []
-                if folder_samples:
-                    examples_sorted = sorted(folder_samples, key=lambda x: x.get('id') or 0)
-                    example_block_lines = [
-                        "EXISTING PROJECT TEST CASE TITLE EXAMPLES (STYLE REFERENCE ONLY):"
-                    ]
-                    for ex in examples_sorted:
-                        title = (ex.get('name') or '').strip()
-                        if title:
-                            example_block_lines.append(f"- {title}")
-                    if len(example_block_lines) > 1:
-                        prompt += "\n\n" + "\n".join(example_block_lines) + "\n"
-            except Exception as inject_err:
-                logger.debug(f"Visual few-shot injection skipped: {inject_err}")
-
-            # Visual-only guardrails
-            prompt += "\n\n" + self._visual_only_guidelines()
+            prompt = self._build_generation_prompt(text, user_limit, multimodal=False)
 
             response = self.bot.safe_generate(prompt)
             raw = (getattr(response, 'text', '') or '').strip()
@@ -172,61 +143,8 @@ OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else 
     # ------------------------------
     async def generate_multimodal(self, images: List, text: str) -> str:
         try:
-            format_instructions = ""
-            examples = ""
-            if getattr(self.bot, 'squash_integration', None):
-                try:
-                    format_instructions = self.bot.squash_integration.generate_format_instructions()
-                    examples = self.bot.squash_integration.get_sample_test_cases_for_reference(test_type='visual')
-                    if isinstance(examples, str) and examples:
-                        examples = self.bot.sanitize_example_titles(examples)
-                except Exception:
-                    pass
-
             user_limit = self.bot._extract_requested_case_count(text or '')
-            size_clause = "GENERATE BDD TEST CASES" if not user_limit else f"GENERATE UP TO {user_limit} BDD TEST CASES"
-
-            prompt = f"""{self._system_prompt()}
-
-TASK: {size_clause} FROM MULTIPLE IMAGES + TEXT REQUIREMENTS (ENGLISH ONLY, NO ASTERISKS)
-
-STRICT FORMAT INSTRUCTIONS (APPLY TO EVERY TEST CASE):
-- Each test case MUST have exactly these sections in order:
-    1) Numbered title line (001., 002., ...)
-    2) Given ...
-    3) When ...
-    4) Then ...
-    5) And ... (optional; 0–2 lines only if needed)
-- No bullets or numbering inside steps; each step must begin with Given/When/Then/And.
-- English only. Do NOT use asterisks (*). No bracketed tags in titles.
-- Output ONLY the test cases, no explanations.
-
-ADDITIONAL GWT RULES:
-- Exactly one Given, one When, and one Then per test case, in that order. Use And for any additional preconditions/actions/outcomes.
-- Each step line must start with exactly one keyword: Given/When/Then/And (no chained keywords).
-- Do not place Given or When after Then; start a new numbered test case instead.
-- Split different intents/states into separate numbered cases or use a Scenario Outline with Examples.
-- Ensure every test case ends with a Then.
-
-PROJECT FORMAT REFERENCE:
-{format_instructions}
-
-EXAMPLES FROM PROJECT (SANITIZED):
-{examples}
-
-TARGET SCOPE: VISUAL
-
-AGGREGATED REQUIREMENTS TEXT:
-{text if text else 'Generate test cases based on images only'}
-
-CONTENT RULES:
-1) {'Generate 15–20 comprehensive test cases (aim for 20)' if not user_limit else f'Generate no more than {user_limit} comprehensive test cases; fewer is acceptable if content is insufficient.'}.
-2) Include positive, negative, and edge cases where relevant.
-3) Ensure naming and structure match Squash TM expectations.
-4) Transform any functional intent into visual assertions only (appearance, alignment, spacing, color, typography, icons, responsive behavior, contrast, accessibility). Do NOT assert data correctness, filtering/search/sort outcomes, API/backend behavior, or business logic. You MAY assert visual cues (selected filter chip, active sort indicator, focus ring, placeholder visibility, empty-state card presence).
-"""
-
-            prompt += "\n\n" + self._visual_only_guidelines()
+            prompt = self._build_generation_prompt(text, user_limit, multimodal=True)
 
             parts = [prompt] + (images or [])
             # Centralized Gemini 2.0 multimodal fallback

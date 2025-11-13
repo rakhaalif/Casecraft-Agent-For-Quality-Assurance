@@ -29,10 +29,7 @@ try:
 except Exception:  # pragma: no cover
     get_index = None  # type: ignore
 
-# Load environment variables
 load_dotenv()
-
-# Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -107,18 +104,14 @@ def util_contains_indonesian(text: str) -> bool:
 
 class TelegramQABot:
     def __init__(self):
-        
-        # Load environment variables
+
         load_dotenv()
-        
-        # Initialize logging
         logging.basicConfig(
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             level=logging.INFO
         )
         self.logger = logging.getLogger(__name__)
         
-        # Single-instance lock 
         self._lock_file = 'bot_instance.lock'
         if not os.environ.get('BOT_FORCE'):
             try:
@@ -152,10 +145,8 @@ class TelegramQABot:
             except Exception as lf_err:
                 print(f"⚠️ Could not create lock file: {lf_err}")
 
-        # Initialize bot token (ensure type is str for type checkers)
         self.token = os.getenv('TELEGRAM_BOT_TOKEN') or ""
 
-        # Initialize Gemini AI model (Gemini 2.0 flash/flash-lite only)
         try:
             genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))  # type: ignore[attr-defined]
 
@@ -174,15 +165,12 @@ class TelegramQABot:
             available = _list_models_safe()
             avail_names = set([_normalize_name(getattr(m, 'name', '') or getattr(m, 'model', '')) for m in available])
 
-            # Environment overrides
             env_text = os.getenv('GEMINI_MODEL')
             env_vision = os.getenv('GEMINI_VISION_MODEL')
 
-            # Preferred 2.0 options (restricted)
             pref_text = [n for n in [env_text, 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] if n]
             pref_vision = [n for n in [env_vision, 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] if n]
 
-            # Choose first available; if list_models not available, we still try to instantiate
             def _pick(name_list):
                 for n in name_list:
                     if not avail_names or n in avail_names:
@@ -192,21 +180,17 @@ class TelegramQABot:
             self.base_model_name = _pick(pref_text)
             self.vision_model_name = _pick(pref_vision)
 
-            # Instantiate models
-            self.model = genai.GenerativeModel(self.base_model_name)  # type: ignore[attr-defined]
+            self.model = genai.GenerativeModel(self.base_model_name)  
             try:
                 self.vision_model = genai.GenerativeModel(self.vision_model_name)
             except Exception:
-                # Fall back to base; multimodal calls will try alternates
                 self.vision_model = self.model
 
-            # Candidate list for multimodal calls (2.0 only, restricted)
             self.multimodal_candidates = []
             for name in [self.vision_model_name, 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
                 if name and name not in self.multimodal_candidates:
                     self.multimodal_candidates.append(name)
 
-            # Candidate list for text calls (2.0 only, restricted)
             self.text_candidates = []
             for name in [self.base_model_name, 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
                 if name and name not in self.text_candidates:
@@ -215,15 +199,11 @@ class TelegramQABot:
             print(f"Failed to initialize Gemini AI: {e}")
             raise
 
-        # Initialize user sessions
         self.user_sessions = {}
-        # Cache product-specific knowledge (loaded lazily after selection)
         self.product_knowledge = {}
-        # Disable Squash integrations/monitor by default
         self.squash_integration = None
         self.squash_monitor = None
 
-        # Knowledge loading → no-op per request (do not depend on external files)
         self.knowledge_base = ""
 
         self.qa_system_prompt = (
@@ -232,10 +212,8 @@ class TelegramQABot:
             f"{self.knowledge_base}\n"
         )
         
-        # Initialize the application with enhanced settings
         from telegram.request import HTTPXRequest
         
-        # Create custom request with timeout settings
         request = HTTPXRequest(
             connection_pool_size=8,
             connect_timeout=30.0,
@@ -251,7 +229,6 @@ class TelegramQABot:
             .build()
         )
 
-        # Initialize lightweight agent architecture (manager + specialized agents)
         try:
             self.functional_agent = FunctionalAgent(self)
             self.visual_agent = VisualAgent(self)
@@ -263,7 +240,6 @@ class TelegramQABot:
             self.visual_agent = None
             self.agent_manager = None
         
-        # Set up handlers
         self.setup_handlers()
         
         logger.info("Telegram QA Bot initialized successfully")
@@ -407,7 +383,6 @@ class TelegramQABot:
         except Exception as e:
             await update.message.reply_text(f"❌ Error showing models: {e}")
 
-    # Centralized generators with 2.0-only fallbacks
     def safe_generate(self, payload: Any):
         """Generate content for text or array payloads using Gemini 2.0 only.
 
@@ -421,7 +396,6 @@ class TelegramQABot:
                 tried.append(name)
                 model = self.model if name in (self.base_model_name, self.vision_model_name) else genai.GenerativeModel(name)
                 resp = model.generate_content(payload)
-                # Cache the working model names
                 if isinstance(payload, list):
                     self.vision_model = model
                     self.vision_model_name = name
@@ -449,7 +423,6 @@ class TelegramQABot:
         except Exception as e:
             await update.message.reply_text(f"❌ Error showing models: {e}")
 
-    # Centralized multimodal generation with Gemini 2.0 fallbacks
     def multimodal_generate(self, parts: list):
         last_err: Exception | None = None
         tried = []
@@ -459,7 +432,6 @@ class TelegramQABot:
         for name in candidates:
             try:
                 tried.append(name)
-                # Prefer already-instantiated vision model
                 model = self.vision_model if getattr(self, 'vision_model_name', None) == name else genai.GenerativeModel(name)
                 return model.generate_content(parts)
             except Exception as e:
@@ -479,7 +451,6 @@ class TelegramQABot:
             await update.message.reply_text(f"❌ Failed to reset session: {e}")
 
     async def handle_text_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # ✅ SAFETY CHECKS - Tambahkan di awal
         if not update or not update.message:
             logger.warning("Update or message is None in handle_text_message")
             return
@@ -488,7 +459,6 @@ class TelegramQABot:
             logger.warning("Message text is None")
             return
         
-        # ✅ Safe user ID extraction
         try:
             user_id = update.effective_user.id
             user_message = update.message.text
@@ -499,18 +469,13 @@ class TelegramQABot:
         user_session = self.user_sessions.get(user_id, {'mode': 'general'})
         mode = user_session.get('mode', 'general')
         test_type = user_session.get('test_type', 'all')
-    # translate_type removed; using generate/test type only
-        
-        # ✅ Safe typing indicator
         try:
             await update.message.reply_chat_action('typing')
         except Exception as e:
             logger.warning(f"Could not send typing action: {e}")
         
         try:
-            # Enforce product selection before accepting requirements in generate/testcases modes
             if user_session.get('mode') in ('testcases', 'generate') and 'product' not in user_session:
-                # Show product selection menu
                 keyboard = [
                     [InlineKeyboardButton("Prime", callback_data="select_product_prime"),
                      InlineKeyboardButton("Hi", callback_data="select_product_hi"),
@@ -522,16 +487,10 @@ class TelegramQABot:
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return
-            # Global collection mode guard: capture any incoming text as part of the collection
-    # ✅ Safe user ID extraction
             if user_session.get('mode') not in ('modify_testcase', 'modify_selected_testcase') \
                and context.user_data.get('collect_requirements_mode', False):
                 texts = context.user_data.get('collected_texts', [])
-                # Avoid duplicate first-text insertion: only append if different from last recorded
-                # Prevent double-counting the first text captured during classify -> collection transition
                 if context.user_data.get('__collection_initial_text_loaded'):
-                    # Flag indicates the first text was already inserted (e.g., via image classification)
-                    # Consume the flag and SKIP appending this turn to prevent starting at 2.
                     context.user_data.pop('__collection_initial_text_loaded', None)
                     pass
                 else:

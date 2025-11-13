@@ -1,24 +1,18 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import logging
+from textwrap import dedent
 
 
 logger = logging.getLogger(__name__)
 
 
 class FunctionalAgent:
-    """Functional test generation agent.
-
-    Encapsulates functional prompts and generation for text-only and multimodal
-    using the host bot's model and enforcement utilities.
-    """
+    """Generate functional test cases via Gemini."""
 
     def __init__(self, host_bot):
         self.bot = host_bot
 
-    # ------------------------------
-    # Public utility: format template (functional)
-    # ------------------------------
     def get_format_template(self) -> str:
         """Return the user-facing format guide for functional test cases."""
         return (
@@ -36,12 +30,15 @@ class FunctionalAgent:
             "Environment: Web application\n"
         )
 
-    # ------------------------------
-    # Knowledge & prompts (functional)
-    # ------------------------------
     def _load_functional_knowledge(self) -> str:
-        # No-op: external knowledge files disabled
-        return ''
+        """Fetch optional functional QA knowledge from the host bot."""
+        source = getattr(self.bot, 'functional_knowledge', '')
+        if callable(source):
+            try:
+                return source() or ''
+            except Exception:  # best-effort helper; ignore downstream errors
+                return ''
+        return source or ''
 
     def _system_prompt(self) -> str:
         base = getattr(self.bot, 'qa_system_prompt', '')
@@ -54,63 +51,62 @@ class FunctionalAgent:
             suffix += f"\n\nTYPE-SPECIFIC KNOWLEDGE (FUNCTIONAL):\n{kb}"
         return base + suffix
 
-    # ------------------------------
-    # Text-only generation (functional)
-    # ------------------------------
+    def _build_generation_prompt(
+        self,
+        requirements: str,
+        user_limit: Optional[int],
+        multimodal: bool,
+    ) -> str:
+        limit_clause = (
+            f"Generate up to {user_limit} test cases." if user_limit else "Generate 15-20 concise test cases."
+        )
+        sanitized_requirements = (requirements or '').strip()
+        requirement_block = (
+            sanitized_requirements
+            or "No additional written requirements supplied. Derive sensible functional flows from the available context."
+        )
+        if multimodal:
+            source_text = (
+                "Use the provided images as the primary reference. "
+                + (
+                    f"Supplementary notes:\n{sanitized_requirements}"
+                    if sanitized_requirements
+                    else "No extra textual notes supplied."
+                )
+            )
+        else:
+            source_text = requirement_block
+
+        prompt = dedent(
+            f"""
+            {self._system_prompt()}
+
+            TASK: {limit_clause}
+            INPUT MODE: {'Images + optional text' if multimodal else 'Text requirements only'}
+            SOURCE: {source_text}
+
+            OUTPUT RULES:
+            - Write in English only; do not use asterisks or markdown bullets.
+            - Each test case must be numbered 001., 002., ... and include exactly one Given, one When, one Then. Optional follow-up steps must use And.
+            - Keep steps on separate lines with the keyword at the start (Given/When/Then/And).
+            - End every test case with a Then step and start a new number for new scenarios.
+            - Cover positive, negative, and edge flows while staying grounded in the provided requirements.
+
+            REQUIREMENTS:
+            {requirement_block}
+
+            Return only the list of test cases.
+            """
+        ).strip()
+        return prompt
+
     async def generate_from_text(self, text: str) -> str:
         try:
-            # User may request a specific number of cases
             user_limit = self.bot._extract_requested_case_count(text or '')
-            size_clause = (
-                "GENERATE BDD TEST CASES"
-                if not user_limit else f"GENERATE UP TO {user_limit} BDD TEST CASES"
-            )
+            prompt = self._build_generation_prompt(text, user_limit, multimodal=False)
 
-            prompt = f"""{self._system_prompt()}
-
-TASK: {size_clause} FROM TEXT REQUIREMENTS (ENGLISH ONLY, NO ASTERISKS)
-
-TEXT REQUIREMENTS:
-{text}
-
-TARGET: Generate FUNCTIONAL TEST CASES using custom knowledge base standards.
-
-STRICT FORMAT INSTRUCTIONS (APPLY TO EVERY TEST CASE):
-- Each test case MUST include exactly:
-    - Numbered title line (001., 002., ...)
-    - Given (required)
-    - When (required)
-    - Then (required)
-    - And (optional; 0–2 lines)
-- Do NOT skip Given/When/Then. English only. No asterisks (*). Only output test cases.
-- Include positive, negative, and edge cases.
-
-ADDITIONAL GWT RULES:
-- Exactly one Given, one When, and one Then per test case, in that order. Use And for any additional preconditions/actions/outcomes.
-- Each step line must start with exactly one keyword: Given/When/Then/And (no chained keywords, e.g., "When Given ...").
-- Never place Given or When after Then; start a new numbered test case instead.
-- Split different intents or states (e.g., empy vs large dataset) into separate numbered cases or use a Scenario Outline with Examples.
-- Every test case must end with a Then step.
-
-EXAMPLE SKELETON:
-001. Title
-Given ...
-When ...
-Then ...
-And ... (optional)
-
-TYPE-SPECIFIC RULES:
-- FUNCTIONAL: Focus on behavior, inputs/outputs, validations, logic. Avoid purely visual-only checks as primary outcomes.
-
-OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else f'Generate no more than {user_limit} test cases; fewer is acceptable if content is insufficient.'} that follow project standards.
-"""
-
-            # Few-shot injection from external systems removed per decommissioning
-
-            # Call Gemini via 2.0-safe generator
             response = self.bot.safe_generate(prompt)
             raw = (getattr(response, 'text', '') or '').strip()
-            # Use host bot utilities to finalize and enforce
             result = self.bot._finalize_output(raw, prompt, [prompt])
             result = self._enforce_bdd_and_type(result, max_count=user_limit)
             if not result:
@@ -139,58 +135,11 @@ OUTPUT SIZE: {'Generate 15–20 test cases (aim for 20)' if not user_limit else 
             logger.error(f"FunctionalAgent.generate_from_text error: {e}")
             return f"❌ Error generating functional test cases: {e}"
 
-    # ------------------------------
-    # Multimodal generation (functional)
-    # ------------------------------
     async def generate_multimodal(self, images: List, text: str) -> str:
         try:
-            format_instructions = ""
-            examples = ""
-
             user_limit = self.bot._extract_requested_case_count(text or '')
-            size_clause = "GENERATE BDD TEST CASES" if not user_limit else f"GENERATE UP TO {user_limit} BDD TEST CASES"
+            prompt = self._build_generation_prompt(text, user_limit, multimodal=True)
 
-            prompt = f"""{self._system_prompt()}
-
-TASK: {size_clause} FROM MULTIPLE IMAGES + TEXT REQUIREMENTS (ENGLISH ONLY, NO ASTERISKS)
-
-STRICT FORMAT INSTRUCTIONS (APPLY TO EVERY TEST CASE):
-- Each test case MUST have exactly these sections in order:
-    1) Numbered title line (001., 002., ...)
-    2) Given ...
-    3) When ...
-    4) Then ...
-    5) And ... (optional; 0–2 lines only if needed)
-- No bullets or numbering inside steps; each step must begin with Given/When/Then/And.
-- English only. Do NOT use asterisks (*). No bracketed tags in titles.
-- Output ONLY the test cases, no explanations.
-
-ADDITIONAL GWT RULES:
-- Exactly one Given, one When, and one Then per test case, in that order. Use And for any additional preconditions/actions/outcomes.
-- Each step line must start with exactly one keyword: Given/When/Then/And (no chained keywords).
-- Do not place Given or When after Then; start a new numbered test case instead.
-- Split different intents/states into separate numbered cases or use a Scenario Outline with Examples.
-- Ensure every test case ends with a Then.
-
-PROJECT FORMAT REFERENCE:
-{format_instructions}
-
-EXAMPLES FROM PROJECT (SANITIZED):
-{examples}
-
-TARGET SCOPE: FUNCTIONAL
-
-AGGREGATED REQUIREMENTS TEXT:
-{text if text else 'Generate test cases based on images only'}
-
-CONTENT RULES:
-1) {'Generate 15–20 comprehensive test cases (aim for 20)' if not user_limit else f'Generate no more than {user_limit} comprehensive test cases; fewer is acceptable if content is insufficient.'}.
-2) Include positive, negative, and edge cases where relevant.
-3) Ensure naming and structure follow the project knowledge base expectations.
-4) Focus on behavior, inputs/outputs, validations, and logic. Avoid purely visual-only checks as primary outcomes.
-"""
-
-            # Compose content parts: prompt + images
             parts = [prompt] + (images or [])
             response = self.bot.multimodal_generate(parts)
             raw = (getattr(response, 'text', '') or '').strip()
@@ -205,9 +154,6 @@ CONTENT RULES:
             logger.error(f"FunctionalAgent.generate_multimodal error: {e}")
             return f"Error generating functional multi-image test cases: {e}"
 
-    # ------------------------------
-    # General Q&A and modification utilities
-    # ------------------------------
     def answer_general_query(self, question: str) -> str:
         """Answer general QA questions using the bot's system prompt."""
         try:
@@ -221,13 +167,8 @@ Provide comprehensive answer with practical examples and actionable advice. Focu
         except Exception as e:
             return f"Error processing query: {e}"
 
-    # ------------------------------
-    # Utilities
-    # ------------------------------
     def english_only_cleanup(self, draft_text: str) -> str:
-        """Rewrite text in strict English-only, remove asterisks, keep BDD numbering; return cleaned text.
-        Used by telegram_bot._finalize_output as a delegated retry.
-        """
+        """Rewrite text in strict English-only while keeping BDD numbering."""
         try:
             prompt = (
                 "REWRITE STRICTLY IN ENGLISH ONLY. Remove any Indonesian words. "
@@ -324,10 +265,6 @@ Return the COMPLETE set of test cases with only the requested modifications appl
         except Exception as e:
             logger.error(f"FunctionalAgent.modify_specific_test_case error: {e}")
             return f"❌ Error modifying test case: {e}"
-
-    # ------------------------------
-    # Consistent multimodal (template-driven) helpers
-    # ------------------------------
     async def analyze_requirements_structure(self, requirements_text: str) -> dict:
         try:
             analysis_prompt = f"""EXTRACT STRUCTURED DATA from requirements:
@@ -445,10 +382,6 @@ CONTENT_HASH: {content_hash}"""
         except Exception as e:
             logger.error(f"FunctionalAgent.generate_from_template error: {e}")
             return f"❌ Error in template generation: {e}"
-
-    # ------------------------------
-    # Shared visual guardrails access (agent-level)
-    # ------------------------------
     def _get_visual_only_guidelines(self) -> str:
         """Fetch visual-only guardrails from VisualAgent when available, else fallback."""
         try:
@@ -464,10 +397,6 @@ CONTENT_HASH: {content_hash}"""
             "- STEPS must NOT require clicking buttons to trigger business logic (clicks allowed only to reveal UI states).\n"
             "- Focus on what is visually present in the provided sources. Avoid inferring invisible behavior.\n"
         )
-
-    # ------------------------------
-    # Enforcement: BDD + type (functional)
-    # ------------------------------
     def _enforce_bdd_and_type(self, raw_text: str, max_count: int | None = None) -> str:
         """Enforce BDD shape and cap count for functional tests."""
         if not raw_text:
@@ -543,7 +472,6 @@ CONTENT_HASH: {content_hash}"""
             if not has_then:
                 steps.append('Then the expected outcome is produced without errors')
             case['steps'] = steps
-            # Normalize title if it starts with BDD keyword
             def derive_title(ttl: str, stps: list[str]) -> str:
                 if _re.match(r"^(Given|When|Then|And)\b", ttl, flags=_re.I):
                     for s in stps:
